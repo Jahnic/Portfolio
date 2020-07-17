@@ -3,5 +3,6 @@ Data-science related projects either developed on my own or in collaboration wit
 
 ___
 
-[Olist](https://github.com/Jahnic/Portfolio/blob/master/Olist/Olist.ipynb)
-* Exploratory analysis of e-commerce data
+**Olist - value proposition**
+* [Exploratory analysis and definition of questions]((https://github.com/Jahnic/Portfolio/blob/master/Olist/Olist.ipynb)) of e-commerce data
+* [README.md](https://github.com/Jahnic/Portfolio/blob/master/Olist/README.md)
