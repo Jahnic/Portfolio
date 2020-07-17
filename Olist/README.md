@@ -1,10 +1,5 @@
 # Analysis of Olist, a Brazilian e-commerce service provider
 
-<div style="margin-left: auto; margin-right: auto;">
-  <img src="logo.jfif" width="200" height="200">
-</div>
-
-
 **Definition of business case**
 
 According to statista.com, Brazil is the largest and fastest growing e-commerce market in Latin America. Contrary to most countries, Brazils online market is shared by multiple large companies, which entails unique challenges for retailers interested in e-commerce. Potential sellers cannot rely on a single platform, such as Amazon, to adequately distribute their product.  
@@ -17,12 +12,19 @@ The company has raised over 55M USD in funding and hired more than 200 employees
 
 Data from [Kaggle.com](https://www.kaggle.com/olistbr/brazilian-ecommerce) was used to gain insight into Olists current network. Potential avenues to drive user and seller growth are examined. The data set contains 9 csv files organized in a relational schema. Files contain information about customers, sellers, geolocations, items, payments, reviews, placed orders and a translation of product categories from Portuguese to English. Total data volume amounts to 140MB.
 
-**Purpose**
+**Purpose of project**
 
-This project explores strategies to increase the value of the company. Questions have been defined and a rudimentary exploration of the data has been implemented.
+This project explores strategies to increase value for Olist.  
+Questions about the data are defined to guide the analysis and a rudimentary exploration of the data is implemented.
 
 **Results**
 
-Data was retrieved over a period of two years from 2016 to 2018. The data contains records of 99441 orders with 96096 unique customers. This implies that most customers have placed only a single order during the entire period of data collection. For the assembly of the dataset, datapoints were probably chosen at random. Consequently, customer aggregations would not be meaningful. 
+Data on orders placed through Olist was retrieved over a period of two years from 2016 to 2018. The data contains 99441 records of orders from 96096 unique customers. This implies that most customers have placed only a single order during the entire period of data collection. For the assembly of the dataset datapoints were probably chosen at random. Consequently, customer aggregations would not be meaningful. 
 
-Areas for further inquiry have been identified such as product delivery, geographical seller distributions and one-/two-stars customer reviews. Top categories have been visualized which has revealed a high demand for furniture and homeware related products.
+Areas for further inquiry have been identified such as product delivery, geographical seller distributions and one-/two-stars customer reviews. Top categories have been visualized, which has revealed a high demand for furniture and homeware related products.
+
+<div style="margin-left: auto; margin-right: auto;">
+  <img src="logo.jfif" width="200" height="200">
+</div>
+
+
