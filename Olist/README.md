@@ -15,13 +15,13 @@ Data from [Kaggle.com](https://www.kaggle.com/olistbr/brazilian-ecommerce) was u
 **Purpose of project**
 
 This project explores strategies to increase value for Olist.  
-Questions about the data are defined to guide the analysis and a rudimentary exploration of the data is implemented.
+A rudimentary exploration of the data is implemented.
 
 **Results**
 
 Data on orders placed through Olist was retrieved over a period of two years from 2016 to 2018. The data contains 99441 records of orders from 96096 unique customers. This implies that most customers have placed only a single order during the entire period of data collection. For the assembly of the dataset datapoints were probably chosen at random. Consequently, customer aggregations would not be meaningful. 
 
-Areas for further inquiry have been identified such as product delivery, geographical seller distributions and one-/two-stars customer reviews. Top categories have been visualized, which has revealed a high demand for furniture and homeware related products.
+Questions about the data have been defined to guide the analysis. Areas for further inquiry have been identified such as product delivery, geographical seller distributions and one-/two-stars customer reviews. Top categories have been visualized, which has revealed a high demand for furniture and homeware related products.
 
 <div style="margin-left: auto; margin-right: auto;">
   <img src="logo.jfif" width="200" height="200">
