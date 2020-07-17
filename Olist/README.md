@@ -1,6 +1,9 @@
 # Analysis of Olist, a Brazilian e-commerce service provider
 
-![logo](logo.jfif)
+<div style="margin-left: auto; margin-right: auto;">
+  <img src="logo.jfif" width="200" height="200">
+</div>
+
 
 **Definition of business case**
 
@@ -14,6 +17,12 @@ The company has raised over 55M USD in funding and hired more than 200 employees
 
 Data from [Kaggle.com](https://www.kaggle.com/olistbr/brazilian-ecommerce) was used to gain insight into Olists current network. Potential avenues to drive user and seller growth are examined. The data set contains 9 csv files organized in a relational schema. Files contain information about customers, sellers, geolocations, items, payments, reviews, placed orders and a translation of product categories from Portuguese to English. Total data volume amounts to 140MB.
 
-**Value proposition**
+**Purpose**
 
-Olist is focused on increasing the number of sellers using their platform. Retailers, on the other hand, are interested in maximizing their online sales to compensate for the 20% markup and recurring monthly fees. However, the more sellers, the higher the competition and the lower the turnover for individual retailers. Consequently, if the objective is to grow the seller base, it will be vital to optimize product marketing to reach as many potential buyers as possible. 
+This project explores strategies to increase the value of the company. Questions have been defined and a rudimentary exploration of the data has been implemented.
+
+**Results**
+
+Data was retrieved over a period of two years from 2016 to 2018. The data contains records of 99441 orders with 96096 unique customers. This implies that most customers have placed only a single order during the entire period of data collection. For the assembly of the dataset, datapoints were probably chosen at random. Consequently, customer aggregations would not be meaningful. 
+
+Areas for further inquiry have been identified such as product delivery, geographical seller distributions and one-/two-stars customer reviews. Top categories have been visualized which has revealed a high demand for furniture and homeware related products.
