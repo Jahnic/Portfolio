@@ -1,5 +1,5 @@
 # Portfolio
-Data-science related projects either developed on my own or in collaboration with others. As this repository grows, I attempt to highlight skills and competencies reflective of my current state.
+Data-science related projects either developed on my own or in collaboration with others. As this repository grows, I attempt to highlight skills and competencies reflective of my current state of competencies.
 
 ___
 
