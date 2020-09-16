@@ -25,7 +25,8 @@ df = pd.read_csv("data/condos.csv").iloc[:, 3: ]
 
 # Define features and target
 y = df[['price']]
-X = df.drop('price', axis=1)
+X = df.iloc[:, 2: ]
+X
 
 # Split data 
 X_train, X_test, y_train, y_test  = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -43,7 +44,8 @@ LR.fit(X_train, y_train)
 predicted = LR.predict(X_test)
 
 # R^2
-LR.score(X_test, y_test)
+r2 = LR.score(X_test, y_test)
+print("R-Squared:", r2)
 
 # Predicted vs. actual
 y_pred = pd.Series(predicted.flatten())
@@ -57,7 +59,7 @@ filename = 'linear_regression_model.sav'
 pickle.dump(LR, open(filename, 'wb'))
 # MSE
 mse = mean_squared_error(y_true=y_actual, y_pred=y_pred)
-np.sqrt(mse)
+print("Squareroot of MSE:", np.sqrt(mse))
 
 
 # Coefficient weights
