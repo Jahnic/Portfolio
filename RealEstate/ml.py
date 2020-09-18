@@ -30,11 +30,11 @@ X
 
 # Split data 
 X_train, X_test, y_train, y_test  = train_test_split(X, y, test_size=0.2, random_state=42)
-
+X_train.shape
 # Scale features
-# scaler = StandardScaler()
-# X_train = scaler.fit_transform(X_train)
-# X_test = scaler.fit_transform(X_test)
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.fit_transform(X_test)
 
 # Train LR model
 LR = LinearRegression()
@@ -82,7 +82,12 @@ plt.show()
 
 # Pytorch prediction
 EPOCHS = 200
-BATCH_SIZE = 31
+BATCH_SIZE = 19
+
+# Scale features
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.fit_transform(X_test)
 
 y_train = torch.from_numpy(np.array(y_train).astype(np.float32))
 torch.FloatTensor(y_train)
@@ -129,7 +134,7 @@ print(device)
 
 CUDA_LAUNCH_BLOCKING=1
 net = torch.nn.Sequential(
-        torch.nn.Linear(31, 200),
+        torch.nn.Linear(19, 200),
         torch.nn.LeakyReLU(),
         torch.nn.Linear(200, 100),
         torch.nn.LeakyReLU(),
@@ -167,7 +172,7 @@ with torch.no_grad():
     for X_batch in test_loader:
         X_batch = X_batch.to(device)
         y_test_pred = net(X_batch)
-#         print(y_test_pred)
+#       print(y_test_pred)
 
         y_pred_list.append(y_test_pred.cpu().numpy())
         
