@@ -20,7 +20,7 @@ import pickle
 
 
 # Full df
-df = pd.read_csv("data/condos.csv").iloc[:, 3: ]
+df = pd.read_csv("data/model_data.csv").iloc[:, 3: ]
 # Copy coordinates in separate table and drop from df
 
 # Define features and target
@@ -32,9 +32,9 @@ X
 X_train, X_test, y_train, y_test  = train_test_split(X, y, test_size=0.2, random_state=42)
 X_train.shape
 # Scale features
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.fit_transform(X_test)
+# scaler = StandardScaler()
+# X_train = scaler.fit_transform(X_train)
+# X_test = scaler.fit_transform(X_test)
 
 # Train LR model
 LR = LinearRegression()
@@ -60,6 +60,7 @@ pickle.dump(LR, open(filename, 'wb'))
 # MSE
 mse = mean_squared_error(y_true=y_actual, y_pred=y_pred)
 print("Squareroot of MSE:", np.sqrt(mse))
+
 
 
 # Coefficient weights
