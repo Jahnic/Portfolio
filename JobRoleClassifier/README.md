@@ -6,10 +6,10 @@
 * Built web API uding flask
 
 ## Code and Resources Used
-**Python Version:** 3.6.9
-**Packages:** pandas, numpy, sklearn, matplotlib, seaborn, selenium, flask, json, pickle
-**Scraper Article:** https://github.com/arapfaik/scraping-glassdoor-selenium
-**Flask Productionization:** https://towardsdatascience.com/productionize-a-machine-learning-model-with-flask-and-heroku-8201260503d2
+**Python Version:** 3.6.9  
+**Packages:** pandas, numpy, sklearn, matplotlib, seaborn, selenium, flask, json, pickle  
+**Scraper Article:** https://github.com/arapfaik/scraping-glassdoor-selenium  
+**Flask Productionization:** https://towardsdatascience.com/productionize-a-machine-learning-model-with-flask-and-heroku-8201260503d2  
 
 ## Web Scraping
 
