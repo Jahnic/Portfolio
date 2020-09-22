@@ -11,6 +11,8 @@ from sklearn.ensemble import RandomForestRegressor
 # Model tuning and scores
 from sklearn.model_selection import cross_val_score, GridSearchCV
 from sklearn.metrics import mean_absolute_error
+# Save Model
+import pickle
 
 
 
@@ -21,20 +23,23 @@ df.columns
 df_model = df[['avg_salary', 'title', 'locational_salary_quantiles', 'Rating', 'Size', 'Type of ownership', 'Industry',
             'Sector', 'Revenue', 'seniority', 'desc_len', 'age', 'python', 'R', 'spark',
             'aws', 'excel', 'sql']]
+
+# Salary regression data
+df_salaries = df_model.dropna()
 # get dummy data
-df_dum = pd.get_dummies(df_model)
+df_dum = pd.get_dummies(df_salaries)
 
 # train  test split
 X = df_dum.drop('avg_salary', axis=1)
 y = df_dum.avg_salary.values
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 # multiple linear regression
-X_sm = X = sm.add_constant(X) # intercept
+X_sm = sm.add_constant(X) # intercept
 model = sm.OLS(y, X_sm)
 model.fit().summary()
-# Sklern LR
+# Sklearn LR
 lm = LinearRegression()
 lm.fit(X_train, y_train)
 np.mean(cross_val_score(lm, X_train, y_train, scoring='neg_mean_absolute_error')) 
@@ -50,7 +55,7 @@ for i in range(1, 100):
     alpha.append(i/100)
     lm_l = Lasso(alpha=(i/100))
     error.append(np.mean(cross_val_score(
-        lm_l, X_test, y_test, scoring='neg_mean_absolute_error')) 
+        lm_l, X_train, y_train, scoring='neg_mean_absolute_error')) 
 )
 plt.plot(alpha, error)
 
@@ -82,4 +87,14 @@ mean_absolute_error(y_test, tpred_lm)
 mean_absolute_error(y_test, tpred_lml)
 mean_absolute_error(y_test, tpred_rf)
 
-mean_absolute_error(y_test, (0.9*tpred_rf + 0.1*tpred_lm))
+# Save model
+pickl = {'model': gs.best_estimator_}
+pickle.dump(pickl, open('model_file.p', 'wb'))
+
+# test model file
+file_name = 'model_file.p'
+with open(file_name, 'rb') as pickled:
+    data = pickle.load(pickled)
+    model = data['model']
+model.predict(X_test.iloc[1,:].values.reshape(1,-1))
+
