@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 # linear regression
+import statsmodels.api as sm 
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
@@ -19,22 +20,22 @@ import imageio
 import pickle
 
 
-# Full df
-df = pd.read_csv("data/model_data.csv").iloc[:, 3: ]
+# Load Data
+df = pd.read_csv("data/model_data.csv").iloc[:, 4: ]
+#df = pd.read_csv("/home/jahnic/Git/Portfolio/RealEstate/data/condos.csv").iloc[:, 4: ]
 # Copy coordinates in separate table and drop from df
 
 # Define features and target
-y = df[['price']]
-X = df.iloc[:, 2: ]
-X
+y = df.price.values
+X = df.drop('price', axis=1).astype('float')
+
+# Statsmodels for further feature selection 
+X_sm = sm.add_constant(X) # intercept
+model = sm.OLS(y, X_sm)
+model.fit().summary()
 
 # Split data 
 X_train, X_test, y_train, y_test  = train_test_split(X, y, test_size=0.2, random_state=42)
-X_train.shape
-# Scale features
-# scaler = StandardScaler()
-# X_train = scaler.fit_transform(X_train)
-# X_test = scaler.fit_transform(X_test)
 
 # Train LR model
 LR = LinearRegression()
@@ -49,7 +50,7 @@ print("R-Squared:", r2)
 
 # Predicted vs. actual
 y_pred = pd.Series(predicted.flatten())
-y_actual = y_test.reset_index(drop=True).astype("float")
+y_actual = pd.Series(y_test)
 # Merge into data frame
 results = pd.concat([y_actual, y_pred], axis=1, ignore_index=True)
 results.columns = ['Actual', 'Predicted']
@@ -63,27 +64,25 @@ print("Squareroot of MSE:", np.sqrt(mse))
 
 
 
-# Coefficient weights
-feature_list = X.columns
-importance = LR.coef_[0]
-# Assign coefficient weights to corresponding features
-feature_importance = {}
-for i, feature in enumerate(feature_list):
-    feature_importance[feature] = importance[i]
-# Print feature importance    
-for feature, score in feature_importance.items():
-	print('Feature: {} Score: {:.5f}'.format(feature, score))
-
-#  low_scoring_features: quiet, elementary_schools, high_schools, daycares,
-#     rooms, college_
+# # Coefficient weights *use only with scaled features*
+# feature_list = X.columns
+# importance = LR.coef_
+# # Assign coefficient weights to corresponding features
+# feature_importance = {}
+# for i, feature in enumerate(feature_list):
+#     feature_importance[feature] = importance[i]
+# # Print feature importance    
+# for feature, score in feature_importance.items():
+# 	print('Feature: {} Score: {:.5f}'.format(feature, score))
  
-# plot feature importance
-plt.bar([x for x in range(len(importance))], importance)
-plt.show()
+# # plot feature importance
+# plt.bar(feature_list, importance)
+# plt.xticks(rotation=90)
+# plt.show()
 
 # Pytorch prediction
 EPOCHS = 200
-BATCH_SIZE = 19
+BATCH_SIZE = 18
 
 # Scale features
 scaler = StandardScaler()
@@ -135,7 +134,7 @@ print(device)
 
 CUDA_LAUNCH_BLOCKING=1
 net = torch.nn.Sequential(
-        torch.nn.Linear(19, 200),
+        torch.nn.Linear(18, 200),
         torch.nn.LeakyReLU(),
         torch.nn.Linear(200, 100),
         torch.nn.LeakyReLU(),
@@ -174,7 +173,6 @@ with torch.no_grad():
         X_batch = X_batch.to(device)
         y_test_pred = net(X_batch)
 #       print(y_test_pred)
-
         y_pred_list.append(y_test_pred.cpu().numpy())
         
 y_pred_list = [a.squeeze().tolist() for a in y_pred_list]
