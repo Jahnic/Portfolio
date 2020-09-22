@@ -7,3 +7,9 @@ ___
 * Definition of questions to guide analysis
 * Data exploration and visualization
 * Value proposition
+
+
+[Real estate scraper](https://github.com/Jahnic/Portfolio/tree/master/RealEstate)
+* Extraction of real estate listings found on [Centris](https://www.centris.ca/)
+* Use of Selenium and Chrome Webdriver
+* Data wrangling, model building, productionization 
