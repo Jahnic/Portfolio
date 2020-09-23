@@ -28,14 +28,18 @@ df = pd.read_csv("data/model_data.csv").iloc[:, 4: ]
 # Define features and target
 y = df.price.values
 X = df.drop('price', axis=1).astype('float')
+X.shape
+
+# Split data 
+X_train, X_test, y_train, y_test  = train_test_split(
+    X, y, test_size=0.2, random_state=42)
 
 # Statsmodels for further feature selection 
 X_sm = sm.add_constant(X) # intercept
 model = sm.OLS(y, X_sm)
 model.fit().summary()
 
-# Split data 
-X_train, X_test, y_train, y_test  = train_test_split(X, y, test_size=0.2, random_state=42)
+
 
 # Train LR model
 LR = LinearRegression()
@@ -61,8 +65,6 @@ pickle.dump(LR, open(filename, 'wb'))
 # MSE
 mse = mean_squared_error(y_true=y_actual, y_pred=y_pred)
 print("Squareroot of MSE:", np.sqrt(mse))
-
-
 
 # # Coefficient weights *use only with scaled features*
 # feature_list = X.columns
@@ -92,7 +94,7 @@ X_test = scaler.fit_transform(X_test)
 y_train = torch.from_numpy(np.array(y_train).astype(np.float32))
 torch.FloatTensor(y_train)
 
-## train data
+# train data
 class trainData(Dataset):
     
     def __init__(self, X_data, y_data):
@@ -109,7 +111,7 @@ class trainData(Dataset):
 train_data = trainData(torch.FloatTensor(X_train), torch.FloatTensor(y_train))
 
 
-## test data    
+# test data    
 class testData(Dataset):
     
     def __init__(self, X_data):
@@ -164,7 +166,10 @@ for e in range(1, EPOCHS+1):
         
 
     print(f'Epoch {e+0:03}: | Loss: {epoch_loss/len(train_loader):.5f}')
-    
+
+# Save nn model 
+filename = 'nn_model.sav'
+pickle.dump(net, open(filename, 'wb'))    
     
 y_pred_list = []
 net.eval()
@@ -179,3 +184,4 @@ y_pred_list = [a.squeeze().tolist() for a in y_pred_list]
 
 mse = mean_squared_error(y_test, y_pred_list)
 np.sqrt(mse)
+
