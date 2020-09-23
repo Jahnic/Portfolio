@@ -1,5 +1,5 @@
 # Data Jobs Classification: Project Overview
-* Ctreated a job role classifier to identifiy skills that differntiated data job roles (data science, data engineering, data analytics, ML engineering)
+* Created a classifier to identify skills that differentiate data science job roles (data science, data engineering, data analytics, ML engineering).
 * Scraped over 1000 data related job descriptions from glassdoor using python and selenium.
 * Built NLP pipline to extract features from job descriptions.
 * Optimized model performance of Logistic Regression, Random Forest Classifiers and BERT.
