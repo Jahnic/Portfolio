@@ -1,5 +1,5 @@
 # Portfolio
-Data-science related projects developed from scratch either on my own or in collaboration with others.
+Larger, data-science related projects developed either on my own or in collaboration with others.
 ___
 
 [Real estate scraper](https://github.com/Jahnic/Portfolio/tree/master/RealEstate)
