@@ -22,13 +22,12 @@ import pickle
 
 # Load Data
 df = pd.read_csv("data/model_data.csv").iloc[:, 4: ]
-#df = pd.read_csv("/home/jahnic/Git/Portfolio/RealEstate/data/condos.csv").iloc[:, 4: ]
+# df = pd.read_csv("/home/jahnic/Git/Portfolio/RealEstate/data/condos.csv").iloc[:, 4: ]
 # Copy coordinates in separate table and drop from df
 
 # Define features and target
 y = df.price.values
 X = df.drop('price', axis=1).astype('float')
-X.shape
 
 # Split data 
 X_train, X_test, y_train, y_test  = train_test_split(
@@ -84,7 +83,7 @@ print("Squareroot of MSE:", np.sqrt(mse))
 
 # Pytorch prediction
 EPOCHS = 200
-BATCH_SIZE = 18
+BATCH_SIZE = X.shape[1] # number of features
 
 # Scale features
 scaler = StandardScaler()
@@ -136,7 +135,7 @@ print(device)
 
 CUDA_LAUNCH_BLOCKING=1
 net = torch.nn.Sequential(
-        torch.nn.Linear(18, 200),
+        torch.nn.Linear(BATCH_SIZE, 200),
         torch.nn.LeakyReLU(),
         torch.nn.Linear(200, 100),
         torch.nn.LeakyReLU(),
@@ -168,8 +167,8 @@ for e in range(1, EPOCHS+1):
     print(f'Epoch {e+0:03}: | Loss: {epoch_loss/len(train_loader):.5f}')
 
 # Save nn model 
-filename = 'nn_model.sav'
-pickle.dump(net, open(filename, 'wb'))    
+# filename = 'nn_model.sav'
+# pickle.dump(net, open(filename, 'wb'))    
     
 y_pred_list = []
 net.eval()
@@ -184,4 +183,5 @@ y_pred_list = [a.squeeze().tolist() for a in y_pred_list]
 
 mse = mean_squared_error(y_test, y_pred_list)
 np.sqrt(mse)
+BATCH_SIZE
 
