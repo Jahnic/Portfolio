@@ -14,5 +14,5 @@ ___
 * Full stack project: data wrangling, model building, productionization 
 
 [Job role classifier](https://github.com/Jahnic/Portfolio/tree/master/JobRoleClassifier)
-* Scraping of job descriptions from glassdoor using Selenium in python
+* Scraping of job descriptions from glassdoor using Selenium and Python
 * Full stack project: data wrangling, model building, productionization 
