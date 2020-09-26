@@ -3,6 +3,9 @@ import numpy as np
 # Preprocessing
 import re
 # NLP
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 # Logisic regression
 # BERT 
 
@@ -28,15 +31,27 @@ descriptions['ml_engineering'] = descriptions.title.apply(
 )
 descriptions.describe()
 
-# Remove punctuation
-descriptions.desc[0]
-letters_only = descriptions.desc.apply(
-    lambda x: re.sub("[^a-zA-Z]", # non-letters
-                      " ", # avoid fusing letters
-                      x)
+def preprocess_words(job_description, stop_words):
+    # Remove punctuation
+    letters_only = re.sub("[^a-zA-Z]", # non-letters
+                        " ", # avoid fusing letters
+                        job_description)
+
+    # Split into list of lower case words
+    lower_case = letters_only.lower().split()
+    
+    # Remove stop words
+    words = [w for w in lower_case if w not in stop_words]
+    
+    return (" ".join(words))
+    
+stops = set(stopwords.words('english'))
+# Clean job descriptions
+descriptions['desc'] = descriptions.desc.apply(
+    lambda x: preprocess_words(x, stops)
 )
 
-lower_case = letters_only.lower()
+
 
 # Training data
 ds_labels = np.array(descriptions)
