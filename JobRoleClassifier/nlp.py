@@ -6,7 +6,13 @@ import re
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-from sklearn.feature_extraction.text import TfidfVectorizer 
+from sklearn.feature_extraction.text import TfidfVectorizer
+# Word2Vec
+import nltk.data
+import logging
+from gensim.models import word2vec
+# Load punkt tokenizer
+tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 
 data = pd.read_csv("data/data_clean.csv")
 # Job descriptions 
@@ -131,3 +137,44 @@ test_set = pd.concat(
 train_set.to_csv('NLPData/train_set_bow.csv')
 test_set.to_csv('NLPData/test_set_bow.csv')
 pd.DataFrame(vocab_lemma).to_csv('NLPData/vocab_bow.csv')
+
+# Word2Vec
+# ---------------------------------------------------------
+# ---------------------------------------------------------
+# ---------------------------------------------------------
+
+def desc_to_wordlist(job_description, remove_stopwords=False):
+    """Returns list of lower case words"""
+    # Remove punctuation
+    letters_only = re.sub("[^a-zA-Z]", # non-letters
+                        " ", # avoid fusing letters
+                        job_description)
+
+    # Split into list of lower case words
+    words = letters_only.lower().split()
+    
+    # Remove stop words if remove_stopwords is set to True
+    if remove_stopwords:
+        words = [w for w in lower_case if w not in stop_words]
+    
+    return words
+    
+    
+
+def preprocess_sentences(job_desc, tokenizer, remove_stopwords=False):
+    """
+    Split job description into parsed sentences.
+    Returns list of sentences, with each sentence 
+    represented as a list of words (list of lists)
+    """
+    # Split descriptions into sentences
+    raw_sentences = tokenizer.tokenize(job_desc.strip())
+    sentences = []
+    for raw_sentence in raw_sentences:
+        if len(raw_sentence) > 0: # skip empty
+            sentences = sentences.append(
+                desc_to_wordlist(raw_sentence, remove_stopwords)
+            )
+    return sentences
+    
+sentences = []
