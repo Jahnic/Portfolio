@@ -11,3 +11,6 @@ Due to the complexity of the data retrieval, the process takes about 9 seconds p
 2. Install [Chromedriver](http://chromedriver.chromium.org/). The specified installation path is `'C:/webdriver/chromedriver.exe'`. If you are not using windows you will need to change the path in the code.
 3. Run `scrape.ipynb` to retrieve the data.
 4. Run `wrangle.ipynb` to clean the data or write your own script. The wrangle script focuses on condos since it is the largest market in Montreal and the associated area features were most consistent. If interested in other housing types you will need to write your own scripts for wrangling and modeling the data.
+
+# References
+Introduction to Neural Nets (Google): [Google Colab](https://colab.research.google.com/github/google/eng-edu/blob/master/ml/cc/exercises/intro_to_neural_nets.ipynb?utm_source=mlcc&utm_campaign=colab-external&utm_medium=referral&utm_content=intro_to_nn_tf2-colab&hl=en)
