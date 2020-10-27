@@ -23,12 +23,15 @@ df_model = df[['avg_salary', 'title', 'locational_salary_quantiles', 'Rating', '
             'aws', 'excel', 'sql']]
 # get dummy data
 df_dum = pd.get_dummies(df_model)
+df_dum.dropna(inplace=True)
 
 # train  test split
 X = df_dum.drop('avg_salary', axis=1)
 y = df_dum.avg_salary.values
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+
 
 # multiple linear regression
 X_sm = X = sm.add_constant(X) # intercept
@@ -57,6 +60,11 @@ plt.plot(alpha, error)
 err = tuple(zip(alpha, error))
 df_err = pd.DataFrame(err, columns=['alpha', 'error'])
 df_err[df_err.error == max(df_err.error)]
+
+# Fit according to best alpha
+ lm_l = Lasso(alpha=0.6)
+ lm_l.fit(X_train, y_train)
+ np.mean(cross_val_score(lm_l, X_train, y_train, scoring='neg_mean_absolute_error'))
  
 # random forest
 rf = RandomForestRegressor()
@@ -82,4 +90,7 @@ mean_absolute_error(y_test, tpred_lm)
 mean_absolute_error(y_test, tpred_lml)
 mean_absolute_error(y_test, tpred_rf)
 
-mean_absolute_error(y_test, (0.9*tpred_rf + 0.1*tpred_lm))
+rf_mean_absolute = mean_absolute_error(y_test, (0.9*tpred_rf + 0.1*tpred_lm))
+
+# Mean absolute error per standard deviation
+rf_mean_absolute/y.std()
