@@ -1,9 +1,13 @@
 import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import numpy as np
 # Cluster classifications
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_samples, silhouette_score
 
 data = pd.read_csv("data/complete_data.csv")
 
@@ -23,20 +27,43 @@ neighbourhoods = data[neighbourhood_data]
 x = StandardScaler().fit_transform(neighbourhoods)
 
 # PCA
-pca = PCA()
-pca.fit(x)
-explained_variance = pca.explained_variance_
-print(explained_variance)
-
-# PCA
 pca = PCA(n_components=6)
-pca_transform = pca.fit_transform(x)
+X = pca.fit_transform(x)
 
-# K-means
-k_means = KMeans(n_clusters=5)
-k_means.fit(pca_transform)
+n_cluster_range = [2, 3, 4, 5, 6, 7, 8]
 
-
+for n_clusters in n_cluster_range:
+       # subplot with 1 row and 2 columns
+       fig, (ax1, ax2) = plt.subplots(1, 2)
+       fig.set_size_inches(18, 7)
+       
+       # First plot is sihouette plot [-1, 1]
+       ax1.set_xlim([-1, 1])
+       ax1.set_ylim([0, len(X) + (n_clusters + 1) * 10])
+       
+       # Initialize kmeans
+       k_means = KMeans(n_clusters=n_clusters, random_state=10)
+       cluster_labels = k_means.fit_predict(X)
+       
+       # Silhouette score gives perspective on density and separation
+       silhouette_avg = silhouette_score(X, cluster_labels)
+       print("For n_clusters =", n_clusters,
+              "The average silhouette_score is :", silhouette_avg)
+       # Score for each sample
+       sample_silhouette_values = silhouette_samples(X, cluster_labels)
+       
+       y_lower = 10
+       for i in range(n_clusters):
+              # Aggregate silhouette scores for samples in cluster i and sort
+              ith_cluster_silhouette_values = \
+                     sample_silhouette_values[cluster_labels == i]
+              ith_cluster_silhouette_values.sort()
+              size_cluster_i = ith_cluster_silhouette_values.shape[0]
+              y_upper = y_lower + size_cluster_i
+              
+              color = cm.nipy_spectral(float(i) / n_clusters)
+              ax1.fill_betweenx()   
+       
 
 """
 Demographics Clustering
