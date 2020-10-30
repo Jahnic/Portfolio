@@ -23,8 +23,9 @@ neighbourhood_data = ['restaurants',
 
 # Slice neighbourhood and demographic data 
 neighbourhoods = data[neighbourhood_data]
-# Standardize data
-x = StandardScaler().fit_transform(neighbourhoods)
+# Standardize data only if using neighborhood and demographics
+# x = StandardScaler().fit_transform(neighbourhoods)
+x = neighbourhoods
 
 # PCA
 pca = PCA(n_components=6)
@@ -101,6 +102,21 @@ def silhouette_analysis(n_cluster_range, X):
                      fontsize=14, fontweight='bold')
                      plt.show()
          
+def elbow_plot(data):
+       sum_squared_distances = []
+       K = range(1, 15)
+       for k in K:
+              km = KMeans(n_clusters=k)
+              km = km.fit(data)
+              sum_squared_distances.append(km.inertia_)
+       # Plotting
+       plt.figure(figsize=(13, 10))
+       plt.plot(K, sum_squared_distances, 'bx-')
+       plt.xlabel('K')
+       plt.ylabel('Sum of squared distances')
+       plt.title('Elbow Method for Optimal K')
+       plt.show()
+       
 # """
 # Demographics Clustering
 # """
@@ -141,12 +157,30 @@ def silhouette_analysis(n_cluster_range, X):
 # X_demo = pca.fit_transform(x)
 
 # Neighborhood and demographic data merged
-X_merged = np.concatenate((X_neighborhood, X_demo), axis=1)
+# X_merged = np.concatenate((X_neighborhood, X_demo), axis=1)
 
 # Silhouette analysis on neighborhood and demographic PCs
-n_cluster_range = [2, 3, 5, 6, 8]
+n_cluster_range = [2, 3, 4, 5, 6]
 silhouette_analysis(n_cluster_range, X_neighborhood)
+# Elbow method
+elbow_plot(X_neighborhood)
 
 # silhouette_analysis(n_cluster_range, X_demo)
 # n_cluster_range = [10, 11, 12, 13, 14, 15, 16, 17]
 # silhouette_analysis(n_cluster_range, X_merged)
+
+# Final clustering
+k_means = KMeans(n_clusters=3, random_state=10)
+cluster_labels = k_means.fit_predict(x)
+labels = cluster_labels.flatten()
+
+# Create dataframe of neighbourhood PCs, price, and clusters
+column_names = [('PC_' + str(i)) for i in range(1,7)]
+new_data = pd.DataFrame(X_neighborhood, columns=column_names)
+new_data['price'] = data.price
+new_data['clusters'] = labels
+new_data['growth'] = data.population_variation_between_2011_2016_
+# Mean price pivot table
+new_data.pivot_table(index='clusters', values=['price'], aggfunc='mean')
+# Mean neighborhood growth pivot table
+new_data.pivot_table(index='clusters', values=['growth'], aggfunc='mean')
