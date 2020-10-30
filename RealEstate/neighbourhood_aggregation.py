@@ -23,13 +23,8 @@ neighbourhood_data = ['restaurants',
 
 # Slice neighbourhood and demographic data 
 neighbourhoods = data[neighbourhood_data]
-# Standardize data only if using neighborhood and demographics
-# x = StandardScaler().fit_transform(neighbourhoods)
-x = neighbourhoods
-
-# PCA
-pca = PCA(n_components=6)
-X_neighborhood = pca.fit_transform(x)
+# Standardize data
+x = StandardScaler().fit_transform(neighbourhoods)
 
 def silhouette_analysis(n_cluster_range, X):
        for n_clusters in n_cluster_range:
@@ -108,6 +103,7 @@ def elbow_plot(data):
        for k in K:
               km = KMeans(n_clusters=k)
               km = km.fit(data)
+              # sum of squared distances of samples to cluster center
               sum_squared_distances.append(km.inertia_)
        # Plotting
        plt.figure(figsize=(13, 10))
@@ -160,7 +156,7 @@ def elbow_plot(data):
 # X_merged = np.concatenate((X_neighborhood, X_demo), axis=1)
 
 # Silhouette analysis on neighborhood and demographic PCs
-n_cluster_range = [2, 3, 4, 5, 6]
+n_cluster_range = [2, 3, 4, 5, 6, 7, 8, 9, 10]
 silhouette_analysis(n_cluster_range, X_neighborhood)
 # Elbow method
 elbow_plot(X_neighborhood)
@@ -170,7 +166,7 @@ elbow_plot(X_neighborhood)
 # silhouette_analysis(n_cluster_range, X_merged)
 
 # Final clustering
-k_means = KMeans(n_clusters=3, random_state=10)
+k_means = KMeans(n_clusters=5, random_state=42)
 cluster_labels = k_means.fit_predict(x)
 labels = cluster_labels.flatten()
 
@@ -180,7 +176,14 @@ new_data = pd.DataFrame(X_neighborhood, columns=column_names)
 new_data['price'] = data.price
 new_data['clusters'] = labels
 new_data['growth'] = data.population_variation_between_2011_2016_
-# Mean price pivot table
-new_data.pivot_table(index='clusters', values=['price'], aggfunc='mean')
-# Mean neighborhood growth pivot table
-new_data.pivot_table(index='clusters', values=['growth'], aggfunc='mean')
+
+# Pivot tables
+print('Median condo price and growth per cluster:\n')
+print(new_data.pivot_table(index='clusters', 
+                           values=['price', 'growth'],
+                           aggfunc='median'))
+print('-'*50)
+print('Mean condo price and growth per cluster:\n')
+print(round(new_data.pivot_table(index='clusters', 
+                                 values=['price', 'growth'], 
+                                 aggfunc='mean'), 2))
