@@ -9,7 +9,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_samples, silhouette_score
 
-data = pd.read_csv("data/complete_data.csv")
+# Data including feature on prediction differences
+# diff = actual - predicted
+data = pd.read_csv("data/data_with_prediction_differences.csv")
 
 """
 Neighborhood Clustering
@@ -25,6 +27,10 @@ neighbourhood_data = ['restaurants',
 neighbourhoods = data[neighbourhood_data]
 # Standardize data
 x = StandardScaler().fit_transform(neighbourhoods)
+# PCA
+pca = PCA(n_components=6)
+X = pca.fit_transform(x)
+X_neighborhood = pca.fit_transform(x)
 
 def silhouette_analysis(n_cluster_range, X):
        for n_clusters in n_cluster_range:
@@ -37,7 +43,7 @@ def silhouette_analysis(n_cluster_range, X):
               ax1.set_ylim([0, len(X) + (n_clusters + 1) * 10])
               
               # Initialize kmeans
-              k_means = KMeans(n_clusters=n_clusters, random_state=10)
+              k_means = KMeans(n_clusters=n_clusters, random_state=42)
               cluster_labels = k_means.fit_predict(X)
               
               # Silhouette score gives perspective on density and separation
@@ -99,7 +105,7 @@ def silhouette_analysis(n_cluster_range, X):
          
 def elbow_plot(data):
        sum_squared_distances = []
-       K = range(1, 15)
+       K = range(1, 20)
        for k in K:
               km = KMeans(n_clusters=k)
               km = km.fit(data)
@@ -113,77 +119,115 @@ def elbow_plot(data):
        plt.title('Elbow Method for Optimal K')
        plt.show()
        
-# """
-# Demographics Clustering
-# """
+"""
+Demographics Clustering
+"""
+neighborhood_data = pd.read_csv("data/complete_data.csv")
+demographic_data = ['less_than_$50,000_(%)',
+       'between_$50,000_and_$80,000_(%)', 'between_$80,000_and_$100,000_(%)',
+       'between_$100,000_and_$150,000_(%)', 'more_than_$150,000_(%)',
+       'couples_without_children_at_home_(%)',
+       'couples_with_children_at_home_(%)', 'single-parent_families_(%)',
+       'owners_(%)', 'renters_(%)', 'university_(%)', 'college_(%)', 'secondary_(high)_school_(%)',
+       'apprentice_or_trade_school_diploma_(%)', 'no_diploma_(%)']
 
-# demographic_data = ['less_than_$50,000_(%)',
-#        'between_$50,000_and_$80,000_(%)', 'between_$80,000_and_$100,000_(%)',
-#        'between_$100,000_and_$150,000_(%)', 'more_than_$150,000_(%)',
-#        '1-person_households_(%)', '2-person_households_(%)',
-#        '3-person_households_(%)', '4-person_households_(%)',
-#        '5-person_or_more_households_(%)',
-#        'couples_without_children_at_home_(%)',
-#        'couples_with_children_at_home_(%)', 'single-parent_families_(%)',
-#        'owners_(%)', 'renters_(%)', 'before_1960_(%)',
-#        'between_1961_and_1980_(%)', 'between_1981_and_1990_(%)',
-#        'between_1991_and_2000_(%)', 'between_2001_and_2010_(%)',
-#        'between_2011_and_2016_(%)', 'single-family_homes_(%)',
-#        'semi-detached_or_row_houses_(%)',
-#        'buildings_with_less_than_5_floors_(%)',
-#        'buildings_with_5_or_more_floors_(%)', 'mobile_homes_(%)',
-#        'university_(%)', 'college_(%)', 'secondary_(high)_school_(%)',
-#        'apprentice_or_trade_school_diploma_(%)', 'no_diploma_(%)',
-#        'non-immigrant_population_(%)', 'immigrant_population_(%)',
-#        'french_(%)', 'english_(%)', 'others_languages_(%)']
+# Slice neighbourhood and demographic data 
+demographics = neighborhood_data[demographic_data]
+neighborhood_data.columns
+# Standardize data
+x = StandardScaler().fit_transform(demographics)
 
-# # Slice neighbourhood and demographic data 
-# demographics = data[demographic_data]
-# # Standardize data
-# x = StandardScaler().fit_transform(demographics)
+# PCA
+pca = PCA()
+pca.fit(x)
+explained_variance = pca.explained_variance_
+pca.components_
+plt.plot(range(1, 16), explained_variance/sum(explained_variance))
 
-# # PCA
-# pca = PCA()
-# pca.fit(x)
-# explained_variance = pca.explained_variance_
-# print(explained_variance)
-
-# # PCA
-# pca = PCA(n_components=6)
-# X_demo = pca.fit_transform(x)
-
+# PCA
+pca = PCA(n_components=3)
+X_demo = pca.fit_transform(x)
+X_demo
 # Neighborhood and demographic data merged
-# X_merged = np.concatenate((X_neighborhood, X_demo), axis=1)
-
-# Silhouette analysis on neighborhood and demographic PCs
-n_cluster_range = [2, 3, 4, 5, 6, 7, 8, 9, 10]
-silhouette_analysis(n_cluster_range, X_neighborhood)
-# Elbow method
-elbow_plot(X_neighborhood)
+X_merged = np.concatenate((X_neighborhood, X_demo), axis=1)
 
 # silhouette_analysis(n_cluster_range, X_demo)
 # n_cluster_range = [10, 11, 12, 13, 14, 15, 16, 17]
 # silhouette_analysis(n_cluster_range, X_merged)
 
+# Create dataframe with neighbourhood features of interest
+neighbourhood_column_names = [('PC_neighborhood_' + str(i)) for i in range(1,7)]
+demo_column_names = [('PC_demographics_' + str(i)) for i in range(1,4)]
+column_names = neighbourhood_column_names + demo_column_names
+new_data = pd.DataFrame(X_merged, columns=column_names)
+new_data['price'] = data.price
+new_data['growth'] = data.population_variation_between_2011_2016_
+new_data['walk_score'] = data.walk_score
+new_data['unemployment'] = data.unemployment_rate_2016_
+new_data['condo_age'] = 2020 - data.year_built
+new_data['population_density'] = data.population_density_
+# Normalize and switch from (actual - predicted) to (predicted - actual)
+new_data['normalized_differences'] = -1 * (data['diff'] / data['price'])
+
+"""
+Best results using PC-1, PC-2 and neighborhood growth
+------------------------------------------------------------
+PC1: -> vibrant, urban life
+PC2: -> family friendly, green, moderately vibrant and quiet
+"""
+new_data.drop(['PC_neighborhood_3', 'PC_neighborhood_4', 
+               'PC_neighborhood_5', 'PC_neighborhood_6', 'price'], axis=1).corr()
+x = new_data[['PC_neighborhood_1', 'PC_neighborhood_2', 'PC_demographics_1',
+              'PC_demographics_2', 'PC_demographics_3', 'growth', 
+              'population_density']]
+# Scale features
+X = StandardScaler().fit_transform(x.to_numpy())
+
+# K parameter optimizations
+n_cluster_range = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+silhouette_analysis(n_cluster_range, X)
+elbow_plot(X)
+
 # Final clustering
-k_means = KMeans(n_clusters=5, random_state=42)
-cluster_labels = k_means.fit_predict(x)
+k_means = KMeans(n_clusters=6, random_state=42)
+cluster_labels = k_means.fit_predict(X)
 labels = cluster_labels.flatten()
 
-# Create dataframe of neighbourhood PCs, price, and clusters
-column_names = [('PC_' + str(i)) for i in range(1,7)]
-new_data = pd.DataFrame(X_neighborhood, columns=column_names)
-new_data['price'] = data.price
+# Add clusters and indices
 new_data['clusters'] = labels
-new_data['growth'] = data.population_variation_between_2011_2016_
+new_data['index'] = new_data.index
+# Need positive values for 'size' parameter of plotly scatter_mapbox
+new_data['positive_differences'] = (new_data['normalized_differences'] - \
+                                   new_data['normalized_differences'].min())**5 # negative value
 
 # Pivot tables
 print('Median condo price and growth per cluster:\n')
-print(new_data.pivot_table(index='clusters', 
-                           values=['price', 'growth'],
-                           aggfunc='median'))
+print(round(new_data.pivot_table(index='clusters', 
+                           values=['price', 'growth', 'condo_age', 'population_density',
+                                  'PC_neighborhood_1', 'PC_neighborhood_2',
+                                  'PC_demographics_1', 'PC_demographics_2',
+                                  'PC_demographics_3', 'normalized_differences'],
+                           aggfunc='median'), 2))
 print('-'*50)
 print('Mean condo price and growth per cluster:\n')
 print(round(new_data.pivot_table(index='clusters', 
-                                 values=['price', 'growth'], 
+                                 values=['price', 'growth', 'condo_age', 'population_density',
+                                        'PC_neighborhood_1', 'PC_neighborhood_2',
+                                        'PC_demographics_1', 'PC_demographics_2',
+                                        'PC_demographics_3', 'normalized_differences'],
                                  aggfunc='mean'), 2))
+
+# Geomapping
+import plotly.express as px
+# Mapbox public access token
+px.set_mapbox_access_token('pk.eyJ1IjoiamFobmljIiwiYSI6ImNrZ3dtbWRxNTBia3MzMW4wN2VudXZtcTUifQ.BVPxkX1DH75NahJvzt-f2Q')
+# Additional columns for plotting
+df = pd.concat([new_data, data[['lat', 'long', 'address']]], axis=1)
+# Plot
+fig = px.scatter_mapbox(df, lat="lat", lon="long", color="clusters",
+                        color_continuous_scale=px.colors.sequential.Rainbow, 
+                        hover_data=['index', 'price', 'growth'], 
+                        size='positive_differences',
+                        size_max=10, zoom=10, title='K-Means neighbourhood clusters')
+fig.show()
+
