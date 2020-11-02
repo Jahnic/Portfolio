@@ -178,8 +178,7 @@ PC2: -> family friendly, green, moderately vibrant and quiet
 new_data.drop(['PC_neighborhood_3', 'PC_neighborhood_4', 
                'PC_neighborhood_5', 'PC_neighborhood_6', 'price'], axis=1).corr()
 x = new_data[['PC_neighborhood_1', 'PC_neighborhood_2', 'PC_demographics_1',
-              'PC_demographics_2', 'PC_demographics_3', 'growth', 
-              'population_density']]
+              'PC_demographics_2', 'PC_demographics_3']]
 # Scale features
 X = StandardScaler().fit_transform(x.to_numpy())
 
@@ -189,7 +188,7 @@ silhouette_analysis(n_cluster_range, X)
 elbow_plot(X)
 
 # Final clustering
-k_means = KMeans(n_clusters=6, random_state=42)
+k_means = KMeans(n_clusters=9, random_state=42)
 cluster_labels = k_means.fit_predict(X)
 labels = cluster_labels.flatten()
 
@@ -197,8 +196,8 @@ labels = cluster_labels.flatten()
 new_data['clusters'] = labels
 new_data['index'] = new_data.index
 # Need positive values for 'size' parameter of plotly scatter_mapbox
-new_data['positive_differences'] = (new_data['normalized_differences'] - \
-                                   new_data['normalized_differences'].min())**5 # negative value
+new_data['positive_differences'] = ((new_data['normalized_differences'] - # -- = + 
+                                   new_data['normalized_differences'].min())**5) # negative value
 
 # Pivot tables
 print('Median condo price and growth per cluster:\n')
@@ -223,11 +222,14 @@ import plotly.express as px
 px.set_mapbox_access_token('pk.eyJ1IjoiamFobmljIiwiYSI6ImNrZ3dtbWRxNTBia3MzMW4wN2VudXZtcTUifQ.BVPxkX1DH75NahJvzt-f2Q')
 # Additional columns for plotting
 df = pd.concat([new_data, data[['lat', 'long', 'address']]], axis=1)
+# Remove outlier 
+outlier_index = 2736
+df.drop(outlier_index, inplace=True)
 # Plot
 fig = px.scatter_mapbox(df, lat="lat", lon="long", color="clusters",
                         color_continuous_scale=px.colors.sequential.Rainbow, 
                         hover_data=['index', 'price', 'growth'], 
                         size='positive_differences',
-                        size_max=10, zoom=10, title='K-Means neighbourhood clusters')
+                        size_max=7, zoom=10, title='K-Means neighbourhood clusters')
 fig.show()
 
