@@ -189,7 +189,7 @@ new_data['unemployment'] = data.unemployment_rate_2016_
 new_data['condo_age'] = 2020 - data.year_built
 new_data['population_density'] = data.population_density_
 # Normalize and switch from (actual - predicted) to (predicted - actual)
-new_data['normalized_differences'] = -100 * (data['diff'] / data['price'])
+new_data['normalized_difference'] = -100 * (data['diff'] / data['price'])
 
 """
 Best results using PC-1, PC-2 and neighborhood growth
@@ -278,8 +278,9 @@ print(round(new_data.pivot_table(index='clusters',
 
 
 # Need positive values for 'size' parameter of plotly scatter_mapbox
-new_data['positive_differences'] = ((new_data['normalized_differences'] - # -- = + 
-                                   new_data['normalized_differences'].min()))**8 # negative value
+# Square to stretch extreme points further apart and better differentiate data points on the plot
+new_data['positive_differences'] = ((new_data['normalized_difference'] - # -- = + 
+                                   new_data['normalized_difference'].min()))**8 
 # Geomapping
 import plotly.express as px
 # Mapbox public access token
@@ -292,7 +293,7 @@ df.drop(outlier_index, inplace=True)
 # Plot
 fig = px.scatter_mapbox(df, lat="lat", lon="long", color="clusters",
                         color_continuous_scale=px.colors.sequential.Rainbow, 
-                        hover_data=['index', 'price', 'growth'], 
+                        hover_data=['index', 'price', 'growth', 'normalized_difference'], 
                         size='positive_differences',
                         size_max=7, zoom=10, title='K-Means neighbourhood clusters')
 fig.show()
