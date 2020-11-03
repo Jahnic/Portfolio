@@ -189,7 +189,7 @@ new_data['unemployment'] = data.unemployment_rate_2016_
 new_data['condo_age'] = 2020 - data.year_built
 new_data['population_density'] = data.population_density_
 # Normalize and switch from (actual - predicted) to (predicted - actual)
-new_data['normalized_differences'] = -1 * (data['diff'] / data['price'])
+new_data['normalized_differences'] = -100 * (data['diff'] / data['price'])
 
 """
 Best results using PC-1, PC-2 and neighborhood growth
@@ -258,9 +258,6 @@ for i,c in enumerate(cluster_features):
 # Add clusters and indices
 new_data['clusters'] = labels
 new_data['index'] = new_data.index
-# Need positive values for 'size' parameter of plotly scatter_mapbox
-new_data['positive_differences'] = ((new_data['normalized_differences'] - # -- = + 
-                                   new_data['normalized_differences'].min())**5) # negative value
 
 # Pivot tables
 print('Median condo price and growth per cluster:\n')
@@ -279,6 +276,10 @@ print(round(new_data.pivot_table(index='clusters',
                                         'PC_demographics_3', 'normalized_differences'],
                                  aggfunc='mean'), 2))
 
+
+# Need positive values for 'size' parameter of plotly scatter_mapbox
+new_data['positive_differences'] = ((new_data['normalized_differences'] - # -- = + 
+                                   new_data['normalized_differences'].min()))**8 # negative value
 # Geomapping
 import plotly.express as px
 # Mapbox public access token
