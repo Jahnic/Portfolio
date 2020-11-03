@@ -140,11 +140,7 @@ def k_optimization_plots(n_ks, sum_squared_distances, km_silhouette, gm_bic):
        plt.xticks(K, fontsize=14)
        plt.yticks(fontsize=15)
        plt.show()
-
-
-
-
-       
+      
 """
 Demographics Clustering
 """
@@ -248,10 +244,10 @@ k_means = KMeans(n_clusters=9, random_state=42)
 cluster_labels = k_means.fit_predict(X)
 labels = cluster_labels.flatten()
 
-# 2D visualizion of cluster separation
-plt.figure(figsize=(16,14))
+# 2D visualization of cluster separation
 for i,c in enumerate(cluster_features):
-    plt.subplot(3,2,i+1)
+    plt.figure(figsize=(15,20))
+    plt.subplot(9,1,i+1)
     sns.boxplot(y=x[c],x=labels)
     plt.xticks(fontsize=15)
     plt.yticks(fontsize=15)
