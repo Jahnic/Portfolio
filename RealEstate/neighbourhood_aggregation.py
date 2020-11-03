@@ -1,13 +1,17 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import seaborn as sns
 import numpy as np
 # Cluster classifications
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_samples, silhouette_score
+from sklearn.metrics import silhouette_samples, silhouette_score, davies_bouldin_score,v_measure_score
+from sklearn.mixture import GaussianMixture
+from itertools import combinations
+
 
 # Data including feature on prediction differences
 # diff = actual - predicted
@@ -103,21 +107,43 @@ def silhouette_analysis(n_cluster_range, X):
                      fontsize=14, fontweight='bold')
                      plt.show()
          
-def elbow_plot(data):
-       sum_squared_distances = []
-       K = range(1, 20)
-       for k in K:
-              km = KMeans(n_clusters=k)
-              km = km.fit(data)
-              # sum of squared distances of samples to cluster center
-              sum_squared_distances.append(km.inertia_)
-       # Plotting
+def k_optimization_plots(n_ks, sum_squared_distances, km_silhouette, gm_bic):
+       K = range(2, n_ks + 1)
+       # Elbow plot
        plt.figure(figsize=(13, 10))
        plt.plot(K, sum_squared_distances, 'bx-')
        plt.xlabel('K')
        plt.ylabel('Sum of squared distances')
-       plt.title('Elbow Method for Optimal K')
+       plt.xticks(K, fontsize=14)
+       plt.yticks(fontsize=15)
+       plt.title('Elbow Method for determining optimal K\n', fontsize=16)
        plt.show()
+       
+       # Silhouette plot
+       plt.figure(figsize=(13, 10))
+       plt.title("The silhouette coefficient method \nfor determining number of clusters\n",fontsize=16)
+       plt.scatter(K, y=km_silhouette, s=150, edgecolor='k')
+       plt.grid(True)
+       plt.xlabel("Number of clusters",fontsize=14)
+       plt.ylabel("Silhouette score",fontsize=15)
+       plt.xticks(K, fontsize=14)
+       plt.yticks(fontsize=15)
+       plt.show()
+       
+       #  Bayesian Information Criterion (BIC) score plot
+       plt.figure(figsize=(13, 10))
+       plt.title("The Gaussian Mixture model BIC \nfor determining number of clusters\n",fontsize=16)
+       plt.scatter(K,y=np.log(gm_bic),s=150,edgecolor='k')
+       plt.grid(True)
+       plt.xlabel("Number of clusters",fontsize=14)
+       plt.ylabel("Log of Gaussian mixture BIC score",fontsize=15)
+       plt.xticks(K, fontsize=14)
+       plt.yticks(fontsize=15)
+       plt.show()
+
+
+
+
        
 """
 Demographics Clustering
@@ -177,20 +203,61 @@ PC2: -> family friendly, green, moderately vibrant and quiet
 """
 new_data.drop(['PC_neighborhood_3', 'PC_neighborhood_4', 
                'PC_neighborhood_5', 'PC_neighborhood_6', 'price'], axis=1).corr()
-x = new_data[['PC_neighborhood_1', 'PC_neighborhood_2', 'PC_demographics_1',
-              'PC_demographics_2', 'PC_demographics_3']]
+cluster_features = ['PC_neighborhood_1', 'PC_neighborhood_2', 'PC_demographics_1',
+              'PC_demographics_2', 'PC_demographics_3', 'population_density',
+              'unemployment']
+x = new_data[cluster_features]
 # Scale features
-X = StandardScaler().fit_transform(x.to_numpy())
+X_scaled = StandardScaler().fit_transform(x)
 
-# K parameter optimizations
-n_cluster_range = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-silhouette_analysis(n_cluster_range, X)
-elbow_plot(X)
+# Calculate metric scores for various K's
+sum_squared_distances= []
+km_silhouette = []
+db_score = []
+gm_bic= []
+for i in range(2,31):
+    km = KMeans(n_clusters=i, random_state=0).fit(X_scaled)
+    preds = km.predict(X_scaled)
+    
+    # Variance 
+    print("Score for number of cluster(s) {}: {}".format(i,km.score(X_scaled)))
+    sum_squared_distances.append(-km.score(X_scaled))
+    
+    # Silhouette
+    silhouette = silhouette_score(X_scaled,preds)
+    km_silhouette.append(silhouette)
+    print("Silhouette score for number of cluster(s) {}: {}".format(i,silhouette))
+    
+    # Davies Bouldin
+    db = davies_bouldin_score(X_scaled,preds)
+    db_score.append(db)
+    print("Davies Bouldin score for number of cluster(s) {}: {}".format(i,db))
+    
+    # Expectation-maximization (Gaussian mixture model)
+    gm = GaussianMixture(n_components=i,n_init=10,tol=1e-3,max_iter=1000).fit(X_scaled)
+    print("BIC for number of cluster(s) {}: {}".format(i,gm.bic(X_scaled)))
+    print("Log-likelihood score for number of cluster(s) {}: {}".format(i,gm.score(X_scaled)))
+    print("-"*100)
+    gm_bic.append(-gm.bic(X_scaled))
+
+k_optimization_plots(30, sum_squared_distances, km_silhouette, gm_bic)
+
 
 # Final clustering
 k_means = KMeans(n_clusters=9, random_state=42)
 cluster_labels = k_means.fit_predict(X)
 labels = cluster_labels.flatten()
+
+# 2D visualizion of cluster separation
+plt.figure(figsize=(16,14))
+for i,c in enumerate(cluster_features):
+    plt.subplot(3,2,i+1)
+    sns.boxplot(y=x[c],x=labels)
+    plt.xticks(fontsize=15)
+    plt.yticks(fontsize=15)
+    plt.xlabel("Class",fontsize=15)
+    plt.ylabel(c,fontsize=15)
+    plt.show()
 
 # Add clusters and indices
 new_data['clusters'] = labels
