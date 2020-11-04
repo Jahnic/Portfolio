@@ -5,6 +5,7 @@ import seaborn as sns
 import numpy as np
 # Cluster classifications
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
@@ -35,6 +36,31 @@ x = StandardScaler().fit_transform(neighbourhoods)
 pca = PCA(n_components=6)
 X = pca.fit_transform(x)
 X_neighborhood = pca.fit_transform(x)
+# t-SNE
+tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+tsne_results = tsne.fit_transform(x)
+print('t-SNE done!')
+
+def visualize_components(data, component_1, component_2):
+       '''Visualization of PC or t-SNE components'''
+       plt.figure(figsize=(16,10))
+       sns.scatterplot(
+              x=component_1, y=component_2,
+              palette=sns.color_palette("hls", 10),
+              data=data,
+              legend="full",
+              alpha=0.3
+       )
+
+# Data for visualization of PC and t-SNE componenets 
+reduced_dimensions = data.copy()
+reduced_dimensions['tsne-one'] = tsne_results[:,0]
+reduced_dimensions['tsne-two'] = tsne_results[:,1]
+reduced_dimensions['pc-one'] = X_neighborhood[:,0]
+reduced_dimensions['pc-two'] = X_neighborhood[:,1]
+# Visualize reduced dimensions
+visualize_components(reduced_dimensions, 'pc-one', 'pc-two')
+visualize_components(reduced_dimensions, 'tsne-one', 'tsne-two')
 
 def silhouette_analysis(n_cluster_range, X):
        for n_clusters in n_cluster_range:
@@ -159,7 +185,7 @@ neighborhood_data.columns
 # Standardize data
 x = StandardScaler().fit_transform(demographics)
 
-# PCA
+# Initial PCA
 pca = PCA()
 pca.fit(x)
 explained_variance = pca.explained_variance_
@@ -169,7 +195,22 @@ plt.plot(range(1, 16), explained_variance/sum(explained_variance))
 # PCA
 pca = PCA(n_components=3)
 X_demo = pca.fit_transform(x)
-X_demo
+
+# t-SNE
+tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+tsne_results = tsne.fit_transform(x)
+print('t-SNE done!')
+test =  tsne.fit(x)
+test.
+# Data for visualization of PC and t-SNE componenets 
+reduced_dimensions['demo-tsne-one'] = tsne_results[:,0]
+reduced_dimensions['demo-tsne-two'] = tsne_results[:,1]
+reduced_dimensions['demo-pc-one'] = X_demo[:,0]
+reduced_dimensions['demo-pc-two'] = X_demo[:,1]
+# Visualize reduced dimensions
+visualize_components(reduced_dimensions, 'demo-pc-one', 'demo-pc-two')
+visualize_components(reduced_dimensions, 'demo-tsne-one', 'demo-tsne-two')
+
 # Neighborhood and demographic data merged
 X_merged = np.concatenate((X_neighborhood, X_demo), axis=1)
 
