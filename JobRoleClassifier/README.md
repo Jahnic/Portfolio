@@ -3,6 +3,7 @@
 * Scraped over 1000 data related job descriptions from glassdoor using python and selenium.
 * Optimized model performance for Multiple Logistic Regression.
 * Built web application with streamlit  
+
 **Future Work**
 * Build NLP pipeline to extract additional features from job descriptions.
 
