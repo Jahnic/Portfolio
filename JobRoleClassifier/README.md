@@ -1,9 +1,10 @@
 # Data Jobs Classification: Project Overview
 * Created a classifier to identify skills that differentiate data science job roles (data science, data engineering, data analytics, ML engineering).
 * Scraped over 1000 data related job descriptions from glassdoor using python and selenium.
-(* Built NLP pipeline to extract features from job descriptions.)
-* Optimized model performance of Multiple Logistic Regression, and BERT.
-* Built web application with streamlit
+* Optimized model performance for Multiple Logistic Regression.
+* Built web application with streamlit  
+**Future Work**
+* Build NLP pipeline to extract additional features from job descriptions.
 
 ## Code and Resources Used
 **Python Version:** 3.6.9  
