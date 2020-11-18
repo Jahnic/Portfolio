@@ -7,7 +7,7 @@
 **Future Work**
 * Build NLP pipeline to extract additional features from job descriptions.
 
-## Code and Resources Used
+## Resources Used
 **Python Version:** 3.6.9  
 **Packages:** pandas, numpy, sklearn, matplotlib, seaborn, selenium, flask, json, pickle  
 **Scraper Article:** https://github.com/arapfaik/scraping-glassdoor-selenium  
