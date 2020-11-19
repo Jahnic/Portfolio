@@ -13,7 +13,7 @@ Due to the complexity of the data retrieval, the process takes about 9 seconds p
 4. Run `wrangle.ipynb` to clean the data or write your own script. The wrangle script focuses on condos since it is the largest market in Montreal and the associated area features were most consistent. If interested in other housing types you will need to write your own scripts for wrangling and modeling the data.
 
 # References
-Introduction to Neural Nets (Google): [Google Colab](https://colab.research.google.com/github/google/eng-edu/blob/master/ml/cc/exercises/intro_to_neural_nets.ipynb?utm_source=mlcc&utm_campaign=colab-external&utm_medium=referral&utm_content=intro_to_nn_tf2-colab&hl=en)
-Silhouette Analysis: [Scikit-Learn](https://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html#sphx-glr-auto-examples-cluster-plot-kmeans-silhouette-analysis-py)
+Introduction to Neural Nets (Google): [Google Colab](https://colab.research.google.com/github/google/eng-edu/blob/master/ml/cc/exercises/intro_to_neural_nets.ipynb?utm_source=mlcc&utm_campaign=colab-external&utm_medium=referral&utm_content=intro_to_nn_tf2-colab&hl=en)  
+Silhouette Analysis: [Scikit-Learn](https://scikit-learn.org/stable/auto_examples/cluster/plot_kmeans_silhouette_analysis.html#sphx-glr-auto-examples-cluster-plot-kmeans-silhouette-analysis-py)  
 Elbow Method: [Cambridge Spark](https://blog.cambridgespark.com/how-to-determine-the-optimal-number-of-clusters-for-k-means-clustering-14f27070048f)
-Map for geo-plotting: [Mapbox](https://www.mapbox.com/maps/)
+Map for geo-plotting: [Mapbox](https://www.mapbox.com/maps/)  
