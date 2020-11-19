@@ -31,7 +31,7 @@ feature_data = data[feature_columns]
 cluster_data = pd.read_csv("../data/cluster_data.csv")
 
 # Load keras model
-model = keras.models.load_model('tf_linear_model')
+model = keras.models.load_model('tf_linear_model_2')
 
 # Cluster interpretation
 st.write("""

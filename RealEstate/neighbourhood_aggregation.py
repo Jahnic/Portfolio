@@ -12,6 +12,8 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_samples, silhouette_score, davies_bouldin_score,v_measure_score
 from sklearn.mixture import GaussianMixture
 from itertools import combinations
+# Geomapping
+import plotly.express as px
 
 
 # Data including feature on prediction differences
@@ -33,9 +35,9 @@ neighbourhoods = data[neighbourhood_data]
 # Standardize data
 x = StandardScaler().fit_transform(neighbourhoods)
 # PCA
-pca = PCA(n_components=6)
-X = pca.fit_transform(x)
+pca = PCA(n_components=2)
 X_neighborhood = pca.fit_transform(x)
+X_neighborhood
 # t-SNE
 tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
 tsne_results = tsne.fit_transform(x)
@@ -178,6 +180,18 @@ demographic_data = ['less_than_$50,000_(%)',
        'couples_with_children_at_home_(%)', 'single-parent_families_(%)',
        'owners_(%)', 'renters_(%)', 'university_(%)', 'college_(%)', 'secondary_(high)_school_(%)',
        'apprentice_or_trade_school_diploma_(%)', 'no_diploma_(%)']
+"""
+PC1 (-): less_than_$50,000, couples_without_children_at_home, renters, university
+
+PC1 (+): between_$50,000_and_$80,000, between_$80,000_and_$100,000, 
+       between_$100,000_and_$150,000, couples_with_children_at_home, single-parent_families,
+       owners, college, secondary,apprentice_or_trade_school, no_diploma
+
+PC2 (-): less_than_$50,000, between_$50,000_and_$80,000, single-parent_families, 
+       renter, secondary_(high)_school, apprentice_or_trade_school_diploma, no_diploma
+
+PC2 (+): between_$100,000_and_$150,000, more_than_$150,000, owners, university
+"""
 
 # Slice neighbourhood and demographic data 
 demographics = neighborhood_data[demographic_data]
@@ -193,7 +207,7 @@ pca.components_
 plt.plot(range(1, 16), explained_variance/sum(explained_variance))
 
 # PCA
-pca = PCA(n_components=3)
+pca = PCA(n_components=2)
 X_demo = pca.fit_transform(x)
 
 # t-SNE
@@ -201,7 +215,7 @@ tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
 tsne_results = tsne.fit_transform(x)
 print('t-SNE done!')
 test =  tsne.fit(x)
-test.
+
 # Data for visualization of PC and t-SNE componenets 
 reduced_dimensions['demo-tsne-one'] = tsne_results[:,0]
 reduced_dimensions['demo-tsne-two'] = tsne_results[:,1]
@@ -219,9 +233,10 @@ X_merged = np.concatenate((X_neighborhood, X_demo), axis=1)
 # silhouette_analysis(n_cluster_range, X_merged)
 
 # Create dataframe with neighbourhood features of interest
-neighbourhood_column_names = [('PC_neighborhood_' + str(i)) for i in range(1,7)]
-demo_column_names = [('PC_demographics_' + str(i)) for i in range(1,4)]
+neighbourhood_column_names = [('PC_neighborhood_' + str(i)) for i in range(1,3)]
+demo_column_names = [('PC_demographics_' + str(i)) for i in range(1,3)]
 column_names = neighbourhood_column_names + demo_column_names
+column_names
 new_data = pd.DataFrame(X_merged, columns=column_names)
 new_data['price'] = data.price
 new_data['growth'] = data.population_variation_between_2011_2016_
@@ -235,24 +250,22 @@ new_data['normalized_difference'] = -100 * (data['diff'] / data['price'])
 """
 Best results using PC-1, PC-2 and neighborhood growth
 ------------------------------------------------------------
-PC1: -> vibrant, urban life
-PC2: -> family friendly, green, moderately vibrant and quiet
+PC1: -> vibrant, urban life (Negative values)
+PC2: -> family friendly, green, moderately vibrant and quiet (Negative Values)
 """
-new_data.drop(['PC_neighborhood_3', 'PC_neighborhood_4', 
-               'PC_neighborhood_5', 'PC_neighborhood_6', 'price'], axis=1).corr()
-cluster_features = ['PC_neighborhood_1', 'PC_neighborhood_2', 'PC_demographics_1',
-              'PC_demographics_2', 'PC_demographics_3', 'population_density',
-              'unemployment']
+new_data.drop(['price'], axis=1).corr()
+cluster_features = ['PC_neighborhood_1', 'PC_neighborhood_2', 
+              'PC_demographics_1', 'PC_demographics_2']
 x = new_data[cluster_features]
 # Scale features
 X_scaled = StandardScaler().fit_transform(x)
-
+pd.DataFrame(X_scaled).corr()
 # Calculate metric scores for various K's
 sum_squared_distances= []
 km_silhouette = []
 db_score = []
 gm_bic= []
-for i in range(2,31):
+for i in range(2,15):
     km = KMeans(n_clusters=i, random_state=0).fit(X_scaled)
     preds = km.predict(X_scaled)
     
@@ -277,12 +290,12 @@ for i in range(2,31):
     print("-"*100)
     gm_bic.append(-gm.bic(X_scaled))
 
-k_optimization_plots(30, sum_squared_distances, km_silhouette, gm_bic)
+k_optimization_plots(14, sum_squared_distances, km_silhouette, gm_bic)
 
 
 # Final clustering
-k_means = KMeans(n_clusters=9, random_state=42)
-cluster_labels = k_means.fit_predict(X)
+k_means = KMeans(n_clusters=8, random_state=42)
+cluster_labels = k_means.fit_predict(X_scaled)
 labels = cluster_labels.flatten()
 
 # 2D visualization of cluster separation
@@ -300,21 +313,24 @@ for i,c in enumerate(cluster_features):
 new_data['clusters'] = labels
 new_data['index'] = new_data.index
 
+# # -----> Skip clustering and load saved cluster_data table
+# new_data = pd.read_csv('data/cluster_data.csv')
+
 # Pivot tables
 print('Median condo price and growth per cluster:\n')
 print(round(new_data.pivot_table(index='clusters', 
-                           values=['price', 'growth', 'condo_age', 'population_density',
+                           values=['price', 'growth', 'population_density',
                                   'PC_neighborhood_1', 'PC_neighborhood_2',
                                   'PC_demographics_1', 'PC_demographics_2',
-                                  'PC_demographics_3', 'normalized_differences'],
+                                  'normalized_difference'],
                            aggfunc='median'), 2))
 print('-'*50)
 print('Mean condo price and growth per cluster:\n')
 print(round(new_data.pivot_table(index='clusters', 
-                                 values=['price', 'growth', 'condo_age', 'population_density',
+                                 values=['price', 'growth', 'population_density',
                                         'PC_neighborhood_1', 'PC_neighborhood_2',
                                         'PC_demographics_1', 'PC_demographics_2',
-                                        'PC_demographics_3', 'normalized_differences'],
+                                        'normalized_difference'],
                                  aggfunc='mean'), 2))
 
 
@@ -322,8 +338,7 @@ print(round(new_data.pivot_table(index='clusters',
 # Square to stretch extreme points further apart and better differentiate data points on the plot
 new_data['positive_differences'] = ((new_data['normalized_difference'] - # -- = + 
                                    new_data['normalized_difference'].min()))**8 
-# Geomapping
-import plotly.express as px
+
 # Mapbox public access token
 px.set_mapbox_access_token('pk.eyJ1IjoiamFobmljIiwiYSI6ImNrZ3dtbWRxNTBia3MzMW4wN2VudXZtcTUifQ.BVPxkX1DH75NahJvzt-f2Q')
 # Additional columns for plotting
@@ -338,4 +353,8 @@ fig = px.scatter_mapbox(df, lat="lat", lon="long", color="clusters",
                         size='positive_differences',
                         size_max=7, zoom=10, title='K-Means neighbourhood clusters')
 fig.show()
+
+# # Save cluster data
+# df.to_csv('data/cluster_data.csv', index=False)
+# pd.read_csv('data/cluster_data.csv')
 
