@@ -2,13 +2,14 @@ import numpy as np
 import pandas as pd
 import math
 import streamlit as st
-from tensorflow import keras
 from PIL import Image
 # Geomapping
 import plotly.express as px
-# # Feature importance
-# import eli5
-# from eli5.sklearn import PermutationImportance
+# Boost model
+import xgboost as xgb
+# Load models
+import pickle
+
 
 st.write("""
          # Montreal Real Estate Application
@@ -18,33 +19,44 @@ st.write("""
 # Banner
 img = Image.open('banner.jpg')
 st.image(img)
-# Outlier
-outlier_index = 2736
+# # Outlier
+# outlier_index = 2736
 # Load data
-data = pd.read_csv("data/data_with_prediction_differences.csv").iloc[:, 4:]
+data = pd.read_csv("data/data_with_prediction_differences.csv").iloc[:, 1:]
 model_columns = ['price', 'restaurants', 'vibrant', 'cycling_friendly',
        'car_friendly', 'historic', 'quiet', 'parks', 'groceries', 'cafes',
        'transit_friendly', 'greenery', 'year_built', 'walk_score', 'bedrooms',
-       'bathrooms', 'powder_rooms', 'total_area', 'has_pool', 'has_garage',
-       'is_devided', 'mr_distance']
+       'bathrooms', 'powder_rooms', 'total_area', 'mr_distance']
 
 model_data = data[model_columns]
 cluster_data = pd.read_csv("data/cluster_data.csv")
 
-# Load keras model
-model = keras.models.load_model('tf_linear_model_2')
+# Load models 
+# model = keras.models.load_model('tf_linear_model_2')
+pca = pickle.load(open('pca.pkl', 'rb'))
+boost_model = pickle.load(open('boost_model.dat', 'rb')) 
+standard_scaler = pickle.load(open('scaler.dat', 'rb'))
 
 # Sidebar for parameter input
 st.sidebar.header('Adjust Parameters for Price Prediction')
 
 def get_mean(feat):
-    return int(data[feat].mean())
+    if feat not in ['lat', 'long']:
+        return int(data[feat].mean())
+    else:
+        return float(round(data[feat].mean(), 6))
 
 def get_min(feat):
-    return int(data[feat].min())
+    if feat not in ['lat', 'long']:
+        return int(data[feat].min())
+    else:
+        return float(data[feat].min())
 
 def get_max(feat):
-    return int(data[feat].max())
+    if feat not in ['lat', 'long']:
+        return int(data[feat].max())
+    else:
+        return float(data[feat].max())
 
 def distance(destination, origin = (45.504557, -73.598104)):
     """Calculates distances in km from latitudinal/longitudinal data using
@@ -75,29 +87,39 @@ def distance(destination, origin = (45.504557, -73.598104)):
     return d
 
 def user_input_features():
+    # Final order of columns
+    column_order = ['total_area', 'river_proximity', 'has_pool', 'has_garage', 'is_devided',
+       'mr_distance', 'PC_neighborhood_1', 'PC_neighborhood_2',
+       'PC_neighborhood_3', 'PC_neighborhood_4', 'PC_neighborhood_5',
+       'PC_neighborhood_6', 'PC_neighborhood_7', 'PC_neighborhood_8',
+       'bedrooms_0.0', 'bedrooms_1.0', 'bedrooms_2.0', 'bedrooms_3.0',
+       'bedrooms_4.0', 'bedrooms_5.0', 'bedrooms_6.0', 'bathrooms_0.0',
+       'bathrooms_1.0', 'bathrooms_2.0', 'bathrooms_3.0', 'bathrooms_4.0',
+       'powder_rooms_0.0', 'powder_rooms_1.0', 'powder_rooms_2.0']
+    
     # Neighborhood ratings
     restaurant = st.sidebar.slider('Restaurants', 0, 10, 9, key=1)
-    # shopping = st.sidebar.slider('Shopping', 0, 10, 9, key=2)
+    shopping = st.sidebar.slider('Shopping', 0, 10, 9, key=2)
     vibrant = st.sidebar.slider('Vibrant', 0, 10, 9, key=3)
     cycling_friendly = st.sidebar.slider('Cycling Friendly', 0, 10, 9, key=4)
     car_friendly = st.sidebar.slider('Car Friendly', 0, 10, 9, key=5)
     historic = st.sidebar.slider('Historic', 0, 10, 9, key=6)
     quiet = st.sidebar.slider('Quiet', 0, 10, 9, key=7)
-    # elementary_schools = st.sidebar.slider('Elementary Schools', 0, 10, 9, key=8)
-    # high_schools = st.sidebar.slider('High-Schools', 0, 10, 9, key=9)
+    elementary_schools = st.sidebar.slider('Elementary Schools', 0, 10, 9, key=8)
+    high_schools = st.sidebar.slider('High-Schools', 0, 10, 9, key=9)
     parks = st.sidebar.slider('Parks', 0, 10, 9, key=10)
-    # nightlife = st.sidebar.slider('Nightlife', 0, 10, 9, key=11)
+    nightlife = st.sidebar.slider('Nightlife', 0, 10, 9, key=11)
     groceries = st.sidebar.slider('Groceries', 0, 10, 9, key=12)
-    # daycares = st.sidebar.slider('Daycares', 0, 10, 9, key=13)
-    # pedestrian_friendly = st.sidebar.slider('Pedestrian Friendly', 0, 10, 9, key=14)
+    daycares = st.sidebar.slider('Daycares', 0, 10, 9, key=13)
+    pedestrian_friendly = st.sidebar.slider('Pedestrian Friendly', 0, 10, 9, key=14)
     cafes = st.sidebar.slider('Cafes', 0, 10, 9, key=15)
     transit_friendly = st.sidebar.slider('Transit Friendly', 0, 10, 9, key=16)
     greenery = st.sidebar.slider('Greenery', 0, 10, 9, key=17)
     
     # Other parameters
-    year_built = st.sidebar.slider('Year Built', get_min('year_built'), 
-                                   get_max('year_built'), 
-                                   get_mean('year_built'), key=18)
+    # year_built = st.sidebar.slider('Year Built', get_min('year_built'), 
+    #                                get_max('year_built'), 
+    #                                get_mean('year_built'), key=18)
     # population_variation_between_2011_2016_ = st.sidebar.slider('2011-2016 Population Variation',
     #                                             get_min('population_variation_between_2011_2016_'), 
     #                                             get_max('population_variation_between_2011_2016_'), 
@@ -108,74 +130,112 @@ def user_input_features():
     #                                             get_max('unemployment_rate_2016_'), 
     #                                             get_mean('unemployment_rate_2016_')
     #                                             , key=20)
-    walk_score = st.sidebar.slider('Walk Score', get_min('walk_score'), 
-                                   get_max('walk_score'), 
-                                   get_mean('walk_score'), key=21)
+    # walk_score = st.sidebar.slider('Walk Score', get_min('walk_score'), 
+    #                                get_max('walk_score'), 
+    #                                get_mean('walk_score'), key=21)
     # rooms = st.sidebar.slider('Rooms', get_min('rooms'), 
     #                                get_max('rooms'), 
     #                                get_mean('rooms'), key=22)
-    bedrooms = st.sidebar.slider('Bedrooms', get_min('bedrooms'), 
-                                   get_max('bedrooms'), 
+    bedrooms = st.sidebar.slider('Bedrooms', 0, 6, 
                                    get_mean('bedrooms'), key=23)
-    bathrooms = st.sidebar.slider('Bathrooms', get_min('bathrooms'), 
-                                   get_max('bathrooms'), 
+    bathrooms = st.sidebar.slider('Bathrooms', 0, 4, 
                                    get_mean('bathrooms'), key=24)
-    powder_rooms = st.sidebar.slider('Powder Rooms', get_min('powder_rooms'), 
-                                   get_max('powder_rooms'), 
+    powder_rooms = st.sidebar.slider('Powder Rooms', 0, 2, 
                                    get_mean('powder_rooms'), key=25)
-    total_area = st.sidebar.slider('Total Area (sqft)', get_min('total_area'), 
-                                   get_max('total_area'), 
-                                   get_mean('total_area'), key=26)
-    # river_proximity = st.sidebar.slider('River proximity', get_min('river_proximity'), 
-    #                                get_max('river_proximity'), 
-    #                                get_mean('river_proximity'), key=27)
-    # has_pool = st.sidebar.slider('Has Pool', get_min('has_pool'), 
-    #                                get_max('has_pool'), 
-    #                                get_mean('has_pool'), key=28)
-    # has_garage = st.sidebar.slider('Has Garage', get_min('has_garage'), 
-    #                                get_max('has_garage'), 
-    #                                get_mean('has_garage'), key=29)
-    # is_devided = st.sidebar.slider('Divided Condo', get_min('is_devided'), 
-    #                                get_max('is_devided'), 
-    #                                get_mean('is_devided'), key=30)
-    lat = st.sidebar.number_input('Latitude', 45.504557, format="%.6f")
-    lon = st.sidebar.number_input('Longitude', -73.598104, format="%.6f")
+    river_proximity = st.sidebar.checkbox('River proximity', value=False, key=27)
+    has_pool = st.sidebar.checkbox('Has Pool', value=False, key=28)
+    has_garage = st.sidebar.checkbox('Has Garage', value=False, key=29)
+    is_devided = st.sidebar.checkbox('Divided Condo', value=False, key=30)
+    total_area = st.sidebar.number_input('Total Area (sqft)', min_value=get_min('total_area'), 
+                                   max_value=get_max('total_area'), 
+                                   value=get_mean('total_area'))
+    lat = st.sidebar.number_input('Latitude', min_value=get_min('lat'), 
+                                   max_value=get_max('lat'), value=45.456079,
+                                    format="%.6f")
+    lon = st.sidebar.number_input('Longitude', min_value=get_min('long'), 
+                                   max_value=get_max('long'), value=-73.575949,
+                                    format="%.6f")
     
-    data_in = {
+    # PC transform neighborhood data
+    neighborhoods = pd.DataFrame(
+        {
         'restaurants': restaurant,
-        # 'shopping': shopping,
+        'shopping': shopping,
         'vibrant': vibrant,
         'cycling_friendly': cycling_friendly,
         'car_friendly': car_friendly,
         'historic': historic,
         'quiet': quiet,
-        # 'elementary_schools': elementary_schools,
-        # 'high_schools': high_schools,
+        'elementary_schools': elementary_schools,
+        'high_schools': high_schools,
         'parks': parks,
-        # 'nightlife': nightlife,
+        'nightlife': nightlife,
         'groceries': groceries,
-        # 'daycares': daycares,
-        # 'pedestrian_friendly': pedestrian_friendly,
+        'daycares': daycares,
+        'pedestrian_friendly': pedestrian_friendly,
         'cafes': cafes, 
         'transit_friendly': transit_friendly,
-        'greenery': greenery,
-        'year_built': year_built,
-        # 'population_variation_between_2011_2016_': population_variation_between_2011_2016_,
-        # 'unemployment_rate_2016_': unemployment_rate_2016_,
-        'walk_score': walk_score,
-        # 'rooms': rooms,
-        'bedrooms': bedrooms,
-        'bathrooms': bathrooms,
-        'powder_rooms': powder_rooms,
+        'greenery': greenery}, index=[0]
+    )
+    
+    x = standard_scaler.transform(neighborhoods)
+    transformed_neighborhood = pca.transform(x)
+     
+    data_in = {
         'total_area': total_area,
-        # 'river_proximity': river_proximity,
-        # 'has_pool': has_pool,
-        # 'has_garage': has_garage,
-        # 'is_devided': is_devided,
-        'mr_distance': distance(destination=((float(lat), float(lon))))
+        'river_proximity': int(river_proximity),
+        'has_pool': int(has_pool),
+        'has_garage': int(has_garage),
+        'is_devided': int(is_devided),
+        'mr_distance': distance(destination=((float(lat), float(lon)))) # compute distance from downtown
     }
-    print(distance(destination=((float(lat), float(lon)))))
-    return pd.DataFrame(data_in, index=[0])
+    
+    # Rooms into categorical
+    bed = {0: 'bedrooms_0.0', 1: 'bedrooms_1.0', 2: 'bedrooms_2.0', 3: 'bedrooms_3.0',
+       4: 'bedrooms_4.0', 5: 'bedrooms_5.0', 6: 'bedrooms_6.0'}
+    bath = {0: 'bathrooms_0.0',
+       1: 'bathrooms_1.0', 2: 'bathrooms_2.0', 3: 'bathrooms_3.0', 4: 'bathrooms_4.0'}
+    powder = {0: 'powder_rooms_0.0', 1: 'powder_rooms_1.0', 2: 'powder_rooms_2.0'}
+    
+    # Bedrooms
+    for rooms in bed.values():
+        data_in[rooms] = 0
+    n_bedrooms = bed[bedrooms]
+    data_in[n_bedrooms] = 1
+    
+    # Bathrooms
+    for rooms in bath.values():
+        data_in[rooms] = 0
+    n_bathrooms = bath[bathrooms]
+    data_in[n_bathrooms] = 1
+    
+    # Powderrooms
+    for rooms in powder.values():
+        data_in[rooms] = 0
+    n_powder_rooms = powder[powder_rooms]
+    data_in[n_powder_rooms] = 1
+    
+    # Add principle components
+    component = 1
+    for pc in transformed_neighborhood[0]:
+        pc_name = "PC_neighborhood_" + str(component)
+        data_in[pc_name] = pc
+        component += 1 
+    
+    # Convert data in to dataframe    
+    print(data_in)
+    input_result = pd.DataFrame(data_in, index=[0])
+    
+    # Transform skewed features
+    input_result[['PC_neighborhood_1']] = np.sqrt(
+                                            4 + input_result[['PC_neighborhood_1']]
+                                            )
+    input_result[['total_area', 'mr_distance']] = np.log1p(
+                                                input_result[['total_area', 'mr_distance']]
+                                                )
+    # Correct order of results
+    input_result = input_result[column_order]
+    return input_result
 
 def standardize_input(data_in):
     """Standardizes values inside a DataFrame (data_in)"""
@@ -191,6 +251,17 @@ def standardize_input(data_in):
             data_in[col] = standardized
         
     return data_in.to_numpy().reshape(-1, 1)   
+
+# Predict price based on input
+prediction_params = user_input_features() 
+prediction = boost_model.predict(prediction_params)
+# Transform prediction back to $$$
+prediction = np.expm1(prediction)
+prediction_CAD = pd.DataFrame({'Prediction (CAD)': prediction}, index=[0])
+# Print prediction
+st.write("**Price estimation based on current input paramaters** (Adjust parameters in sidebar)")
+st.write(prediction_CAD)
+st.write('---')
     
 # Cluster interpretation
 st.write("""
@@ -230,12 +301,12 @@ additional_attributes
 
 # Further insights on clusters    
 additional_insights = pd.concat([cluster_data['clusters'].astype('str'), 
-                                 data[['price', 'diff', 'walk_score', 
+                                 data[['price', 'prediction_difference', 'walk_score', 
                                  'total_area','mr_distance']]], axis=1)
 
 pivot_table = round(pd.pivot_table(additional_insights, 
                index=['clusters'], 
-               values=['diff', 'walk_score', 'mr_distance']))
+               values=['prediction_difference', 'walk_score', 'mr_distance']))
 pivot_table.columns = ['*Prediction diff.', 'Walk score', '*DWTN distance']
 pivot_table
 
@@ -261,6 +332,32 @@ st.text("""
     Larger dots are overpredictions and may potentially refer to undervalued condos.
     """)
 
+# Top overpredictions
+st.subheader("Uncover undervalued condos")
+filter_in = st.radio('Select filter', ['Absolute difference', 'Percent difference'])
+pred = data[['price', 'predicted', 'prediction_difference']]
+pred = pred.astype('int')
+pred['percent_difference'] = round(pred.prediction_difference / pred.price, 2)
+pred['cluster'] = cluster_data.clusters
+# More readable columns names
+new_cols = ['Price (CAD)', 'Predicted', 'Absolute difference', 
+            'Percent difference', 'Neighborhood cluster']
+pred.columns = new_cols
+if filter_in == 'Absolute difference':
+    top_pred = pred.sort_values(by='Absolute difference', ascending=False).iloc[: 500, :]
+elif filter_in == 'Percent difference':
+    top_pred = pred.sort_values(by='Percent difference', ascending=False).iloc[: 500, :]
+# Display top predictions
+for col in top_pred:
+    if col not in ['Percent difference', 'Neighborhood cluster']:
+        top_pred[col] = top_pred[col].apply(lambda x: f'${x:,}')
+    elif col == 'Percent_difference':
+        top_pred[col] = top_pred[col].apply(lambda x: f'{x:,}%')
+st.dataframe(
+    top_pred
+    )
+    
+
 st.subheader("Obtain records for condos of interest")
 
 # User search for condos based on index
@@ -278,7 +375,7 @@ st.subheader('Condo valuation')
 st.write("""
         Adjust input values at the sidebar to predict prices for specific listings.
         The required parameters can all be found on [centris.ca](https://www.centris.ca/en/properties~for-sale~montreal-island?view=Thumbnail) and other Montreal
-        real estate websites. Predictions work best for condos below $1.5 Million.  
+        real estate websites. Predictions work best for condos below $5 Million.  
         
         Intended usage: look up condos of interest and adjust the required parameters at the side bar. 
         If the predicted price is substantially higher than the actual (~$50,000) this means that 
@@ -286,58 +383,9 @@ st.write("""
         and might be worth looking at in more detail.
         """)
 
-# st.write("**Current input parameters**")
-# # Display prediction input    
-# prediction_params = user_input_features()     
-# st.dataframe(prediction_params, height=2000)
-# st.write('---')
-
-# Predict price based on input
-prediction_params = user_input_features() 
-standardized_params = standardize_input(prediction_params)
-prediction = model.predict(standardized_params.reshape(1,-1))
-# Transform prediction back to $$$
-price_std = 205882.9
-price_mean = 512060.5
-prediction_CAD = prediction * price_std + price_mean
-prediction_CAD = pd.DataFrame({'Prediction (CAD)': prediction_CAD[0][0]}, index=[0])
-# Print prediction
-st.write("**Price estimation based on current input paramaters** (Adjust parameters in sidebar)")
-st.write(prediction_CAD)
-st.write('---')
-
-# # Feature importance
-# features_and_target = feature_data[feature_data.price < 1500000]
-# standard_features = ((features_and_target - features_and_target.mean())
-#                         / features_and_target.std())
-# standard_target = standard_features.pop('price')
-# X = standard_features.to_numpy()
-# y = standard_target.to_numpy()
-
-# @st.cache # improve performance
-# def feature_importance():
-#     perm = PermutationImportance(model, 
-#                              scoring='neg_mean_squared_error',
-#                              random_state=1).fit(X, y)
-#     weights = eli5.explain_weights_df(perm,   
-#                             feature_names=standard_features.columns.tolist(),
-#                             top = 31)
-#     return weights
-
-# weights = feature_importance()
-# weights.weight = 100*(weights.weight / weights.weight.sum())
-# top_10 = weights.iloc[: 10, :]
-# top_10.sort_values(by='weight', inplace=True)
-# top_10.to_csv('data/top_10_features.csv')
-# top_10.feature = np.array(['Restaurants', '2016 unemployment rate', 'Vibrant', 'Historic',
-#        'Cafes', 'Groceries', 'Bathrooms', 'Has a garage',
-#        'Distance from downtown', 'Total condo area'])
-# Top 10 features
-
+# Top 11 features
+st.subheader('Top attributes that predict condo price')
 top_11 = pd.read_csv('data/top_11_features.csv', index_col='Unnamed: 0')
-
-st.subheader('Top attributes that increase condo prices')
-
 st.write(
     px.bar(top_11, 
     x=top_11.weight,
