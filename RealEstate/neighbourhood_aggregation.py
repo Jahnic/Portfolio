@@ -14,11 +14,13 @@ from sklearn.mixture import GaussianMixture
 from itertools import combinations
 # Geomapping
 import plotly.express as px
+# Model saving
+import pickle
 
 
 # Data including feature on prediction differences
 # diff = actual - predicted
-data = pd.read_csv("data/data_with_prediction_differences.csv")
+data = pd.read_csv("web-app/data/data_with_prediction_differences.csv")
 
 """
 Neighborhood Clustering
@@ -35,13 +37,16 @@ neighbourhoods = data[neighbourhood_data]
 # Standardize data
 x = StandardScaler().fit_transform(neighbourhoods)
 # PCA
-pca = PCA(n_components=2)
-X_neighborhood = pca.fit_transform(x)
+pca = PCA(n_components=8)
+pca_model = pca.fit(x) # save
+pickle.dump(pca_model,open('web-app/pca.pkl', 'wb'))
+# Transform data
+X_neighborhood = pickle.load(open('web-app/pca.pkl', 'rb')).transform(x)
 X_neighborhood
-# t-SNE
-tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
-tsne_results = tsne.fit_transform(x)
-print('t-SNE done!')
+# # t-SNE
+# tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+# tsne_results = tsne.fit_transform(x)
+# print('t-SNE done!')
 
 def visualize_components(data, component_1, component_2):
        '''Visualization of PC or t-SNE components'''
@@ -56,13 +61,13 @@ def visualize_components(data, component_1, component_2):
 
 # Data for visualization of PC and t-SNE componenets 
 reduced_dimensions = data.copy()
-reduced_dimensions['tsne-one'] = tsne_results[:,0]
-reduced_dimensions['tsne-two'] = tsne_results[:,1]
+# reduced_dimensions['tsne-one'] = tsne_results[:,0]
+# reduced_dimensions['tsne-two'] = tsne_results[:,1]
 reduced_dimensions['pc-one'] = X_neighborhood[:,0]
 reduced_dimensions['pc-two'] = X_neighborhood[:,1]
 # Visualize reduced dimensions
 visualize_components(reduced_dimensions, 'pc-one', 'pc-two')
-visualize_components(reduced_dimensions, 'tsne-one', 'tsne-two')
+# visualize_components(reduced_dimensions, 'tsne-one', 'tsne-two')
 
 def silhouette_analysis(n_cluster_range, X):
        for n_clusters in n_cluster_range:
@@ -233,7 +238,7 @@ X_merged = np.concatenate((X_neighborhood, X_demo), axis=1)
 # silhouette_analysis(n_cluster_range, X_merged)
 
 # Create dataframe with neighbourhood features of interest
-neighbourhood_column_names = [('PC_neighborhood_' + str(i)) for i in range(1,3)]
+neighbourhood_column_names = [('PC_neighborhood_' + str(i)) for i in range(1,9)]
 demo_column_names = [('PC_demographics_' + str(i)) for i in range(1,3)]
 column_names = neighbourhood_column_names + demo_column_names
 column_names
@@ -244,8 +249,8 @@ new_data['walk_score'] = data.walk_score
 new_data['unemployment'] = data.unemployment_rate_2016_
 new_data['condo_age'] = 2020 - data.year_built
 new_data['population_density'] = data.population_density_
-# Normalize and switch from (actual - predicted) to (predicted - actual)
-new_data['normalized_difference'] = -100 * (data['diff'] / data['price'])
+# Normalize prediction differences (predicted - actual)
+new_data['normalized_difference'] = 100 * (data['prediction_difference'] / data['price'])
 
 """
 Best results using PC-1, PC-2 and neighborhood growth
@@ -294,7 +299,7 @@ k_optimization_plots(14, sum_squared_distances, km_silhouette, gm_bic)
 
 
 # Final clustering
-k_means = KMeans(n_clusters=8, random_state=42)
+k_means = KMeans(n_clusters=2, random_state=42)
 cluster_labels = k_means.fit_predict(X_scaled)
 labels = cluster_labels.flatten()
 
@@ -354,7 +359,8 @@ fig = px.scatter_mapbox(df, lat="lat", lon="long", color="clusters",
                         size_max=7, zoom=10, title='K-Means neighbourhood clusters')
 fig.show()
 
-# # Save cluster data
-# df.to_csv('data/cluster_data.csv', index=False)
-# pd.read_csv('data/cluster_data.csv')
+# Save cluster data
+# df.to_csv('web-app/data/cluster_data.csv', index=False)
+# pd.read_csv('web-app/data/cluster_data.csv')
+df.to_csv('data/cluster_data.csv')
 
