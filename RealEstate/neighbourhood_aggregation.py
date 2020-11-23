@@ -31,11 +31,15 @@ neighbourhood_data = ['restaurants',
        'quiet', 'elementary_schools', 'high_schools', 'parks', 'nightlife',
        'groceries', 'daycares', 'pedestrian_friendly', 'cafes',
        'transit_friendly', 'greenery']
-
 # Slice neighbourhood and demographic data 
 neighbourhoods = data[neighbourhood_data]
-# Standardize data
-x = StandardScaler().fit_transform(neighbourhoods)
+
+# Save standardization scaler
+scaler = StandardScaler().fit(neighbourhoods)
+pickle.dump(scaler, open('web-app/scaler.dat', 'wb'))
+# Test and used loaded scaler model
+x = pickle.load(open('web-app/scaler.dat', 'rb')).transform(neighbourhoods)
+
 # PCA
 pca = PCA(n_components=8)
 pca_model = pca.fit(x) # save
