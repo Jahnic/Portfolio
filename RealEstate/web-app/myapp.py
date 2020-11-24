@@ -58,6 +58,9 @@ def get_max(feat):
     else:
         return float(data[feat].max())
 
+def get_median(feat):
+    return int(data[feat].median())
+
 def distance(destination, origin = (45.504557, -73.598104)):
     """Calculates distances in km from latitudinal/longitudinal data using
     the haversine formula
@@ -98,23 +101,23 @@ def user_input_features():
        'powder_rooms_0.0', 'powder_rooms_1.0', 'powder_rooms_2.0']
     
     # Neighborhood ratings
-    restaurant = st.sidebar.slider('Restaurants', 0, 10, 9, key=1)
-    shopping = st.sidebar.slider('Shopping', 0, 10, 9, key=2)
-    vibrant = st.sidebar.slider('Vibrant', 0, 10, 9, key=3)
-    cycling_friendly = st.sidebar.slider('Cycling Friendly', 0, 10, 9, key=4)
-    car_friendly = st.sidebar.slider('Car Friendly', 0, 10, 9, key=5)
-    historic = st.sidebar.slider('Historic', 0, 10, 9, key=6)
-    quiet = st.sidebar.slider('Quiet', 0, 10, 9, key=7)
-    elementary_schools = st.sidebar.slider('Elementary Schools', 0, 10, 9, key=8)
-    high_schools = st.sidebar.slider('High-Schools', 0, 10, 9, key=9)
-    parks = st.sidebar.slider('Parks', 0, 10, 9, key=10)
-    nightlife = st.sidebar.slider('Nightlife', 0, 10, 9, key=11)
-    groceries = st.sidebar.slider('Groceries', 0, 10, 9, key=12)
-    daycares = st.sidebar.slider('Daycares', 0, 10, 9, key=13)
-    pedestrian_friendly = st.sidebar.slider('Pedestrian Friendly', 0, 10, 9, key=14)
-    cafes = st.sidebar.slider('Cafes', 0, 10, 9, key=15)
-    transit_friendly = st.sidebar.slider('Transit Friendly', 0, 10, 9, key=16)
-    greenery = st.sidebar.slider('Greenery', 0, 10, 9, key=17)
+    restaurant = st.sidebar.slider('Restaurants', 0, 10, get_median('restaurants'), key=1)
+    shopping = st.sidebar.slider('Shopping', 0, 10, get_median('shopping'), key=2)
+    vibrant = st.sidebar.slider('Vibrant', 0, 10, get_median('vibrant'), key=3)
+    cycling_friendly = st.sidebar.slider('Cycling Friendly', 0, 10, get_median('cycling_friendly'), key=4)
+    car_friendly = st.sidebar.slider('Car Friendly', 0, 10, get_median('car_friendly'), key=5)
+    historic = st.sidebar.slider('Historic', 0, 10, get_median('historic'), key=6)
+    quiet = st.sidebar.slider('Quiet', 0, 10, get_median('quiet'), key=7)
+    elementary_schools = st.sidebar.slider('Elementary Schools', 0, 10, get_median('elementary_schools'), key=8)
+    high_schools = st.sidebar.slider('High-Schools', 0, 10, get_median('high_schools'), key=9)
+    parks = st.sidebar.slider('Parks', 0, 10, get_median('parks'), key=10)
+    nightlife = st.sidebar.slider('Nightlife', 0, 10, get_median('nightlife'), key=11)
+    groceries = st.sidebar.slider('Groceries', 0, 10, get_median('groceries'), key=12)
+    daycares = st.sidebar.slider('Daycares', 0, 10, get_median('daycares'), key=13)
+    pedestrian_friendly = st.sidebar.slider('Pedestrian Friendly', 0, 10, get_median('pedestrian_friendly'), key=14)
+    cafes = st.sidebar.slider('Cafes', 0, 10, get_median('cafes'), key=15)
+    transit_friendly = st.sidebar.slider('Transit Friendly', 0, 10, get_median('transit_friendly'), key=16)
+    greenery = st.sidebar.slider('Greenery', 0, 10, get_median('greenery'), key=17)
     
     # Other parameters
     # year_built = st.sidebar.slider('Year Built', get_min('year_built'), 
@@ -258,7 +261,19 @@ prediction = boost_model.predict(prediction_params)
 # Transform prediction back to $$$
 prediction = np.expm1(prediction)
 prediction_CAD = pd.DataFrame({'Prediction (CAD)': prediction}, index=[0])
-# Print prediction
+
+# Price prediction
+st.subheader('Condo valuation')
+st.write("""
+        Adjust input values at the sidebar to predict prices for specific listings.
+        The required parameters can all be found on [centris.ca](https://www.centris.ca/en/properties~for-sale~montreal-island?view=Thumbnail) and other Montreal
+        real estate websites. Predictions work best for condos below $5 Million.  
+        
+        Intended usage: look up condos of interest and adjust the required parameters at the side bar. 
+        If the predicted price is substantially higher than the actual (~$50,000) this means that 
+        condos with similar attributes tend to be more expensive. This could imply that the condo is undervalued 
+        and might be worth looking at in more detail.
+        """)
 st.write("**Price estimation based on current input paramaters** (Adjust parameters in sidebar)")
 st.write(prediction_CAD)
 st.write('---')
@@ -275,55 +290,58 @@ st.write("""
     **Cluster 3:** Moderately vibrant with students and low income residents.  
     **Cluster 4:** Suburb-like, upper middle class neighborhood.  
     **Cluster 5:** Family friendly, with highly educated residents.  
-    **Cluster 6:** Mix of vibrant and family friendly neighborhood with a mix of low and high income earners.  
+    **Cluster 6:** Mix of vibrant and family friendly neighborhood with both low and high income earners.  
     **Cluster 7:** Very Family friendly and uneventful with mostly middle class families.
         """)  
 
 # Additional cluster Interpretation
 st.subheader("""
-        Additional neighborhood attributes for each cluster
+        Additional attributes averaged over each cluster
     """)  
 
-mean_pivot = round(cluster_data.pivot_table(index='clusters', 
+mean_pivot = round(cluster_data.pivot_table(index='Cluster', 
                             values=['PC_neighborhood_1', 'PC_neighborhood_2',
                                 'PC_demographics_1', 'PC_demographics_2',
-                                'growth', 'population_density', 'price']))
+                                'Neighborhood growth', 'Population density', 
+                                'Price', 'Percent difference', 'condo_age'],
+                            aggfunc='mean'))
 # Rename columns
-new_columns = ['PC_neighborhood_1', 'PC_neighborhood_2',
-                'PC_demographics_1', 'PC_demographics_2',
-                'Neighborhood growth', 'Population density', 
-                'Mean condo value']
+new_columns = ['Neighborhood growth', 'PC_demographics_1', 'PC_demographics_2',
+       'PC_neighborhood_1', 'PC_neighborhood_2', 'Percent difference',
+       'Population density', 'Price', 'Condo Age']
 mean_pivot.columns = new_columns
 additional_attributes = mean_pivot[['Neighborhood growth', 
                                     'Population density',
-                                    'Mean condo value']]
+                                    'Price',
+                                    'Percent difference',
+                                    'Condo Age']]
 additional_attributes
 
-# Further insights on clusters    
-additional_insights = pd.concat([cluster_data['clusters'].astype('str'), 
-                                 data[['price', 'prediction_difference', 'walk_score', 
-                                 'total_area','mr_distance']]], axis=1)
+# # Further insights on clusters    
+# additional_insights = pd.concat([cluster_data['clusters'].astype('str'), 
+#                                  data[['price', 'prediction_difference', 'walk_score', 
+#                                  'total_area','mr_distance']]], axis=1)
 
-pivot_table = round(pd.pivot_table(additional_insights, 
-               index=['clusters'], 
-               values=['prediction_difference', 'walk_score', 'mr_distance']))
-pivot_table.columns = ['*Prediction diff.', 'Walk score', '*DWTN distance']
-pivot_table
+# pivot_table = round(pd.pivot_table(additional_insights, 
+#                index=['clusters'], 
+#                values=['prediction_difference', 'walk_score', 'mr_distance']))
+# pivot_table.columns = ['*Prediction diff.', 'Walk score', '*DWTN distance']
+# pivot_table
 
-st.write("""
-        \*DWTN distance: distance from downtown in km    
-        \*Prediction diff.: predicted - actual condo price
-         """)
+# st.write("""
+#         \*DWTN distance: distance from downtown in km    
+#         \*Prediction diff.: predicted - actual condo price
+#          """)
 
 # Geomapping
 st.subheader("Neighbourhood clusters")
 px.set_mapbox_access_token('pk.eyJ1IjoiamFobmljIiwiYSI6ImNrZ3dtbWRxNTBia3MzMW4wN2VudXZtcTUifQ.BVPxkX1DH75NahJvzt-f2Q')
 st.write(
     px.scatter_mapbox(
-        cluster_data, lat="lat", lon="long", color="clusters",
+        cluster_data, lat="lat", lon="long", color="Cluster",
         color_continuous_scale=px.colors.sequential.Rainbow, 
-        hover_data=['index', 'price', 'growth', 'normalized_difference'], 
-        size='positive_differences',
+        hover_data=['Index', 'Price', 'Neighborhood growth', 'Percent difference'], 
+        size='Exponential difference',  
         size_max=7, zoom=10, height=700, width=950)
 )
 
@@ -338,7 +356,7 @@ filter_in = st.radio('Select filter', ['Absolute difference', 'Percent differenc
 pred = data[['price', 'predicted', 'prediction_difference']]
 pred = pred.astype('int')
 pred['percent_difference'] = round(pred.prediction_difference / pred.price, 2)
-pred['cluster'] = cluster_data.clusters
+pred['cluster'] = cluster_data.Cluster
 # More readable columns names
 new_cols = ['Price (CAD)', 'Predicted', 'Absolute difference', 
             'Percent difference', 'Neighborhood cluster']
@@ -359,7 +377,6 @@ st.dataframe(
     
 
 st.subheader("Obtain records for condos of interest")
-
 # User search for condos based on index
 user_input = st.number_input(label="Type index of condo to look up:",
                              value=0
@@ -371,20 +388,8 @@ else:
     st.text("ValueError: Index out of range.")
     
 
-st.subheader('Condo valuation')
-st.write("""
-        Adjust input values at the sidebar to predict prices for specific listings.
-        The required parameters can all be found on [centris.ca](https://www.centris.ca/en/properties~for-sale~montreal-island?view=Thumbnail) and other Montreal
-        real estate websites. Predictions work best for condos below $5 Million.  
-        
-        Intended usage: look up condos of interest and adjust the required parameters at the side bar. 
-        If the predicted price is substantially higher than the actual (~$50,000) this means that 
-        condos with similar attributes tend to be more expensive. This could imply that the condo is undervalued 
-        and might be worth looking at in more detail.
-        """)
-
 # Top 11 features
-st.subheader('Top attributes that predict condo price')
+st.subheader('Top attributes that increase condo prices')
 top_11 = pd.read_csv('data/top_11_features.csv', index_col='Unnamed: 0')
 st.write(
     px.bar(top_11, 
