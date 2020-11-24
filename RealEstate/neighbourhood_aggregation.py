@@ -21,7 +21,6 @@ import pickle
 # Data including feature on prediction differences
 # diff = actual - predicted
 data = pd.read_csv("web-app/data/data_with_prediction_differences.csv")
-
 """
 Neighborhood Clustering
 """
@@ -181,7 +180,6 @@ def k_optimization_plots(n_ks, sum_squared_distances, km_silhouette, gm_bic):
 """
 Demographics Clustering
 """
-neighborhood_data = pd.read_csv("data/complete_data.csv")
 demographic_data = ['less_than_$50,000_(%)',
        'between_$50,000_and_$80,000_(%)', 'between_$80,000_and_$100,000_(%)',
        'between_$100,000_and_$150,000_(%)', 'more_than_$150,000_(%)',
@@ -203,8 +201,8 @@ PC2 (+): between_$100,000_and_$150,000, more_than_$150,000, owners, university
 """
 
 # Slice neighbourhood and demographic data 
-demographics = neighborhood_data[demographic_data]
-neighborhood_data.columns
+demographics = data[demographic_data]
+demographics.columns
 # Standardize data
 x = StandardScaler().fit_transform(demographics)
 
@@ -220,19 +218,19 @@ pca = PCA(n_components=2)
 X_demo = pca.fit_transform(x)
 
 # t-SNE
-tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
-tsne_results = tsne.fit_transform(x)
-print('t-SNE done!')
-test =  tsne.fit(x)
+# tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+# tsne_results = tsne.fit_transform(x)
+# print('t-SNE done!')
+# test =  tsne.fit(x)
 
 # Data for visualization of PC and t-SNE componenets 
-reduced_dimensions['demo-tsne-one'] = tsne_results[:,0]
-reduced_dimensions['demo-tsne-two'] = tsne_results[:,1]
-reduced_dimensions['demo-pc-one'] = X_demo[:,0]
-reduced_dimensions['demo-pc-two'] = X_demo[:,1]
+# reduced_dimensions['demo-tsne-one'] = tsne_results[:,0]
+# reduced_dimensions['demo-tsne-two'] = tsne_results[:,1]
+# reduced_dimensions['demo-pc-one'] = X_demo[:,0]
+# reduced_dimensions['demo-pc-two'] = X_demo[:,1]
 # Visualize reduced dimensions
-visualize_components(reduced_dimensions, 'demo-pc-one', 'demo-pc-two')
-visualize_components(reduced_dimensions, 'demo-tsne-one', 'demo-tsne-two')
+# visualize_components(reduced_dimensions, 'demo-pc-one', 'demo-pc-two')
+# visualize_components(reduced_dimensions, 'demo-tsne-one', 'demo-tsne-two')
 
 # Neighborhood and demographic data merged
 X_merged = np.concatenate((X_neighborhood, X_demo), axis=1)
@@ -303,7 +301,7 @@ k_optimization_plots(14, sum_squared_distances, km_silhouette, gm_bic)
 
 
 # Final clustering
-k_means = KMeans(n_clusters=2, random_state=42)
+k_means = KMeans(n_clusters=8, random_state=0)
 cluster_labels = k_means.fit_predict(X_scaled)
 labels = cluster_labels.flatten()
 
@@ -346,20 +344,32 @@ print(round(new_data.pivot_table(index='clusters',
 # Need positive values for 'size' parameter of plotly scatter_mapbox
 # Square to stretch extreme points further apart and better differentiate data points on the plot
 new_data['positive_differences'] = ((new_data['normalized_difference'] - # -- = + 
-                                   new_data['normalized_difference'].min()))**8 
+                                   new_data['normalized_difference'].min()))**2
+# Change cluster number for better color seperation on map
+# Avoid light blue next to dark blue...
+cluster_transform = {3:0, 1:1, 4:2, 6:3, 2:4, 5:5, 0:6, 7:7}
+new_data.clusters = new_data.clusters.apply(lambda x: cluster_transform[x])
+
 
 # Mapbox public access token
 px.set_mapbox_access_token('pk.eyJ1IjoiamFobmljIiwiYSI6ImNrZ3dtbWRxNTBia3MzMW4wN2VudXZtcTUifQ.BVPxkX1DH75NahJvzt-f2Q')
 # Additional columns for plotting
-df = pd.concat([new_data, data[['lat', 'long', 'address']]], axis=1)
-# Remove outlier 
-outlier_index = 2736
-df.drop(outlier_index, inplace=True)
+df = pd.concat([new_data, data[['lat', 'long']]], axis=1)
+# Rename normalized to percent difference 
+mapper = {'normalized_difference': 'Percent difference',
+          'index': 'Index',
+          'price': 'Price',
+          'growth': 'Neighborhood growth',
+          'clusters': 'Cluster',
+          'positive_differences': 'Exponential difference',
+          'population_density': 'Population density',
+          'unemployment': 'Unemployment'}
+df.rename(columns=mapper, inplace=True)
 # Plot
-fig = px.scatter_mapbox(df, lat="lat", lon="long", color="clusters",
+fig = px.scatter_mapbox(df, lat="lat", lon="long", color="Cluster",
                         color_continuous_scale=px.colors.sequential.Rainbow, 
-                        hover_data=['index', 'price', 'growth', 'normalized_difference'], 
-                        size='positive_differences',
+                        hover_data=['Index', 'Price', 'Neighborhood growth', 'Percent difference'], 
+                        size='Exponential difference',
                         size_max=7, zoom=10, title='K-Means neighbourhood clusters')
 fig.show()
 
@@ -367,4 +377,6 @@ fig.show()
 # df.to_csv('web-app/data/cluster_data.csv', index=False)
 # pd.read_csv('web-app/data/cluster_data.csv')
 df.to_csv('data/cluster_data.csv')
-
+# Test
+data = pd.read_csv('data/cluster_data.csv')
+data['Percent difference'].std()
