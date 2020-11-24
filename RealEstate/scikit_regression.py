@@ -16,7 +16,7 @@ from scipy.stats.stats import pearsonr
 
 # Load data
 path = "data/complete_data.csv"
-complete_data = pd.read_csv(path).iloc[:, 4: ]
+complete_data = pd.read_csv(path).iloc[:, 3: ]
 
 # Transform is_devided into boolean feature
 complete_data['is_devided'] = complete_data.is_devided.astype('bool')
@@ -42,10 +42,10 @@ drop_cols = ['less_than_$50,000_(%)', 'between_$50,000_and_$80,000_(%)',
                 'new_area_from_price', 'new_area_from_rooms', 'basement_bedroom',
                 'n_parking', 'population_2016_', 'population_density_',
                 'rooms','lat', 'long', 'restaurants', 'shopping', 'vibrant', 'cycling_friendly',
-       'car_friendly', 'historic', 'quiet', 'elementary_schools',
-       'high_schools', 'parks', 'nightlife', 'groceries', 'daycares',
-       'pedestrian_friendly', 'cafes', 'transit_friendly', 'greenery', 'walk_score',
-       'year_built', 'population_variation_between_2011_2016_', 'unemployment_rate_2016_']
+                'car_friendly', 'historic', 'quiet', 'elementary_schools',
+                'high_schools', 'parks', 'nightlife', 'groceries', 'daycares',
+                'pedestrian_friendly', 'cafes', 'transit_friendly', 'greenery', 'walk_score',
+                'year_built', 'population_variation_between_2011_2016_', 'unemployment_rate_2016_']
 data = complete_data.drop(drop_cols, axis=1)
 cluster_data = pd.read_csv('data/cluster_data.csv', index_col='Unnamed: 0')
 data = pd.concat([data, cluster_data.iloc[:, : 8]], axis=1)
@@ -66,6 +66,7 @@ test_indices = df[train_size : ].index
 (len(train_indices) + len(test_indices)) == data.shape[0]
 
 # ----------------------> Preprocessing <---------------------- #
+
 # Visualize log transformed vs raw price
 matplotlib.rcParams['figure.figsize'] = (12.0, 6.0)
 prices = pd.DataFrame({"price":data["price"], "log(price + 1)":np.log1p(data["price"])})
@@ -73,7 +74,8 @@ prices.hist()
 
 
 #log transform skewed numeric features:
-numeric_feats = data.dtypes[(data.dtypes != "bool")].index
+numeric_feats = data.dtypes[(data.dtypes != "bool") & 
+                            (data.dtypes != "object")].index
 
 skewed_feats = data[numeric_feats].apply(lambda x: skew(x.dropna())) #compute skewness
 # positive skew
@@ -160,52 +162,54 @@ preds.residuals.std()
 import xgboost as xgb
 from sklearn.model_selection import GridSearchCV
 
-# # Hyperparameter optimization
-# params = {'max_depth': [2, 4], \
-#           "eta": [0.05, 0.1, 0.15], \
-#           "reg_alpha": [ 0.15, 0.2, 0.3, 0.4],
-#           "n_estimators": [1000]}
-#                          learning_rate=0.1) #the params were tuned using xgb.cv
+# Hyperparameter optimization
+params = {'max_depth': [2, 3, 4], \
+          "eta": [0.005, 0.001, 0.01, 0.02], \
+          "reg_alpha": [ 0.05, 0.1, 0.15, 0.3],
+          "n_estimators": [1000]} #the params are tuned using xgb.cv
                          
-# model_xgb = xgb.XGBRegressor()
-# clf = GridSearchCV(model_xgb, params, n_jobs=5, 
-#                   scoring='neg_mean_squared_error', verbose=2, refit=True)
-# clf.fit(X_train, y_train)
-# clf.best_params_
+model_xgb = xgb.XGBRegressor()
+
+# Hyperparam tuning
+clf = GridSearchCV(model_xgb, params, n_jobs=5,
+                   scoring='neg_mean_squared_error', verbose=2, refit=True)
+clf.fit(X_train, y_train)
+clf.best_params_
 
 # Build model
 model_xgb = xgb.XGBRegressor(n_estimators=1000, 
-                             max_depth=2,
-                             eta=0.1,
-                             learning_rate=0.1,
-                             reg_alpha=0.3) #the params were tuned using GridSearchCV
-model_xgb.fit(X_test, y_test)
+                             max_depth=3,
+                             eta=0.01,
+                             reg_alpha=0.05) #the params were tuned using GridSearchCV
+model_xgb.fit(X_train, y_train)
 
 # Boost and lasso
 xgb_preds = np.expm1(model_xgb.predict(X_test))
 # lasso_preds = np.expm1(model_lasso.predict(X_test))
 results = pd.DataFrame({'actual': np.expm1(y_test), 'pred': xgb_preds})
-plt.scatter(results.actual, results.pred)
+plt.scatter(results[results.actual < 1200000].actual, 
+            results[results.actual < 1200000].pred)
 
-# Error of boost residuals
-boost_error = (np.expm1(y_test) - xgb_preds).std()
+# Error of boost residuals with condows below $1.2M
+boost_error = (results[results.actual < 1200000].pred - 
+               results[results.actual < 1200000].actual).std()
+print("Boost test error:", boost_error)
 # lasso_error = (np.expm1(y_test) - lasso_preds).std()
 xgb.plot_importance(model_xgb)
 
-# Save boosted model
+# Save and load boosted model
 model_name = 'web-app/boost_model.dat'
 pickle.dump(model_xgb, open(model_name, 'wb'))
 loaded_model = pickle.load(open(model_name, 'rb'))
-# test saved model
-(np.expm1(loaded_model.predict(X_test)) - results.actual).std()
 
-xgb.plot_tree(loaded_model)
+# # Tree plot
+# xgb.plot_tree(loaded_model)
+
 # -----------------------> predictions on entire data set <------------#
 
 # Categorical room data
-prediction_data = data.copy()
-room_dummies = pd.get_dummies(prediction_data[cat_data].
-                                            astype('str'))
+prediction_data = data.iloc[:, 1 :].copy()
+room_dummies = pd.get_dummies(prediction_data[cat_data].astype('str'))
 prediction_data.drop(cat_data, axis=1, inplace=True)
 prediction_data = pd.concat([prediction_data, room_dummies], axis=1)
 
@@ -219,6 +223,7 @@ features = prediction_data.copy()
 target = features.pop('price')
 
 # Prediction and prediction difference 
+loaded_model = pickle.load(open(model_name, 'rb'))
 predictions = loaded_model.predict(features)
 prediction_table = pd.DataFrame({
                             'actual': np.expm1(target), 
@@ -227,13 +232,15 @@ prediction_table['prediction_difference'] = (prediction_table.predicted
                                   - prediction_table.actual)
 
 # Concat prediction differences to entire data
-complete_data = complete_data[complete_data.price <= 5000000]
-complete_data = pd.concat([complete_data, prediction_table], axis=1)
-complete_data.drop(['actual', 'new_area_from_price', 'new_area_from_rooms'], 
+complete_data_new = complete_data[complete_data.price <= 5000000].copy()
+complete_data_new = pd.concat([complete_data_new, prediction_table], axis=1)
+complete_data_new.drop(['actual', 'new_area_from_price', 'new_area_from_rooms'], 
                    axis=1, inplace=True)
 
+print("Prediction difference variation:", complete_data_new.prediction_difference.std())
+
 # Save data
-complete_data.to_csv('web-app/data/data_with_prediction_differences.csv')
+complete_data_new.to_csv('web-app/data/data_with_prediction_differences.csv')
 
 # ------------------------> keras <--------------------------- #
 
