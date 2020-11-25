@@ -40,12 +40,11 @@ drop_cols = ['less_than_$50,000_(%)', 'between_$50,000_and_$80,000_(%)',
                 'non-immigrant_population_(%)', 'immigrant_population_(%)',
                 'french_(%)', 'english_(%)', 'others_languages_(%)',
                 'new_area_from_price', 'new_area_from_rooms', 'basement_bedroom',
-                'n_parking', 'population_2016_', 'population_density_',
+                'n_parking', 'population_2016_',
                 'rooms','lat', 'long', 'restaurants', 'shopping', 'vibrant', 'cycling_friendly',
                 'car_friendly', 'historic', 'quiet', 'elementary_schools',
                 'high_schools', 'parks', 'nightlife', 'groceries', 'daycares',
-                'pedestrian_friendly', 'cafes', 'transit_friendly', 'greenery', 'walk_score',
-                'year_built', 'population_variation_between_2011_2016_', 'unemployment_rate_2016_']
+                'pedestrian_friendly', 'cafes', 'transit_friendly', 'greenery']
 data = complete_data.drop(drop_cols, axis=1)
 cluster_data = pd.read_csv('data/cluster_data.csv', index_col='Unnamed: 0')
 data = pd.concat([data, cluster_data.iloc[:, : 8]], axis=1)
@@ -80,7 +79,9 @@ numeric_feats = data.dtypes[(data.dtypes != "bool") &
 skewed_feats = data[numeric_feats].apply(lambda x: skew(x.dropna())) #compute skewness
 # positive skew
 positive_skewed_feats = skewed_feats[skewed_feats > 0.75]
-log_transform = ['price', 'total_area', 'mr_distance']
+log_transform = ['price', 'total_area', 'mr_distance',
+                 'year_built', 'walk_score', 'population_density_',
+                 'population_variation_between_2011_2016_']
 
 # Transform with natural log + 1
 fixed_skew_data = data.copy()
@@ -165,7 +166,7 @@ from sklearn.model_selection import GridSearchCV
 # Hyperparameter optimization
 params = {'max_depth': [2, 3, 4], \
           "eta": [0.005, 0.001, 0.01, 0.02], \
-          "reg_alpha": [ 0.05, 0.1, 0.15, 0.3],
+          "reg_alpha": [ 0.01, 0.025, 0.05, 0.1],
           "n_estimators": [1000]} #the params are tuned using xgb.cv
                          
 model_xgb = xgb.XGBRegressor()
@@ -178,9 +179,9 @@ clf.best_params_
 
 # Build model
 model_xgb = xgb.XGBRegressor(n_estimators=1000, 
-                             max_depth=3,
-                             eta=0.01,
-                             reg_alpha=0.05) #the params were tuned using GridSearchCV
+                             max_depth=4,
+                             eta=0.02,
+                             reg_alpha=0.01) #the params were tuned using GridSearchCV
 model_xgb.fit(X_train, y_train)
 
 # Boost and lasso
