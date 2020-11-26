@@ -246,11 +246,8 @@ column_names = neighbourhood_column_names + demo_column_names
 column_names
 new_data = pd.DataFrame(X_merged, columns=column_names)
 new_data['price'] = data.price
-new_data['growth'] = data.population_variation_between_2011_2016_
 new_data['walk_score'] = data.walk_score
-new_data['unemployment'] = data.unemployment_rate_2016_
 new_data['condo_age'] = 2020 - data.year_built
-new_data['population_density'] = data.population_density_
 # Normalize prediction differences (predicted - actual)
 new_data['normalized_difference'] = 100 * (data['prediction_difference'] / data['price'])
 
@@ -267,37 +264,38 @@ x = new_data[cluster_features]
 # Scale features
 X_scaled = StandardScaler().fit_transform(x)
 pd.DataFrame(X_scaled).corr()
-# Calculate metric scores for various K's
-sum_squared_distances= []
-km_silhouette = []
-db_score = []
-gm_bic= []
-for i in range(2,15):
-    km = KMeans(n_clusters=i, random_state=0).fit(X_scaled)
-    preds = km.predict(X_scaled)
-    
-    # Variance 
-    print("Score for number of cluster(s) {}: {}".format(i,km.score(X_scaled)))
-    sum_squared_distances.append(-km.score(X_scaled))
-    
-    # Silhouette
-    silhouette = silhouette_score(X_scaled,preds)
-    km_silhouette.append(silhouette)
-    print("Silhouette score for number of cluster(s) {}: {}".format(i,silhouette))
-    
-    # Davies Bouldin
-    db = davies_bouldin_score(X_scaled,preds)
-    db_score.append(db)
-    print("Davies Bouldin score for number of cluster(s) {}: {}".format(i,db))
-    
-    # Expectation-maximization (Gaussian mixture model)
-    gm = GaussianMixture(n_components=i,n_init=10,tol=1e-3,max_iter=1000).fit(X_scaled)
-    print("BIC for number of cluster(s) {}: {}".format(i,gm.bic(X_scaled)))
-    print("Log-likelihood score for number of cluster(s) {}: {}".format(i,gm.score(X_scaled)))
-    print("-"*100)
-    gm_bic.append(-gm.bic(X_scaled))
 
-k_optimization_plots(14, sum_squared_distances, km_silhouette, gm_bic)
+# # Hyperparameter tuning
+# sum_squared_distances= []
+# km_silhouette = []
+# db_score = []
+# gm_bic= []
+# for i in range(2,15):
+#     km = KMeans(n_clusters=i, random_state=0).fit(X_scaled)
+#     preds = km.predict(X_scaled)
+    
+#     # Variance 
+#     print("Score for number of cluster(s) {}: {}".format(i,km.score(X_scaled)))
+#     sum_squared_distances.append(-km.score(X_scaled))
+    
+#     # Silhouette
+#     silhouette = silhouette_score(X_scaled,preds)
+#     km_silhouette.append(silhouette)
+#     print("Silhouette score for number of cluster(s) {}: {}".format(i,silhouette))
+    
+#     # Davies Bouldin
+#     db = davies_bouldin_score(X_scaled,preds)
+#     db_score.append(db)
+#     print("Davies Bouldin score for number of cluster(s) {}: {}".format(i,db))
+    
+#     # Expectation-maximization (Gaussian mixture model)
+#     gm = GaussianMixture(n_components=i,n_init=10,tol=1e-3,max_iter=1000).fit(X_scaled)
+#     print("BIC for number of cluster(s) {}: {}".format(i,gm.bic(X_scaled)))
+#     print("Log-likelihood score for number of cluster(s) {}: {}".format(i,gm.score(X_scaled)))
+#     print("-"*100)
+#     gm_bic.append(-gm.bic(X_scaled))
+
+# k_optimization_plots(14, sum_squared_distances, km_silhouette, gm_bic)
 
 
 # Final clustering
@@ -324,21 +322,21 @@ new_data['index'] = new_data.index
 # new_data = pd.read_csv('data/cluster_data.csv')
 
 # Pivot tables
-print('Median condo price and growth per cluster:\n')
-print(round(new_data.pivot_table(index='clusters', 
-                           values=['price', 'growth', 'population_density',
-                                  'PC_neighborhood_1', 'PC_neighborhood_2',
-                                  'PC_demographics_1', 'PC_demographics_2',
-                                  'normalized_difference'],
-                           aggfunc='median'), 2))
-print('-'*50)
-print('Mean condo price and growth per cluster:\n')
-print(round(new_data.pivot_table(index='clusters', 
-                                 values=['price', 'growth', 'population_density',
-                                        'PC_neighborhood_1', 'PC_neighborhood_2',
-                                        'PC_demographics_1', 'PC_demographics_2',
-                                        'normalized_difference'],
-                                 aggfunc='mean'), 2))
+# print('Median condo price and growth per cluster:\n')
+# print(round(new_data.pivot_table(index='clusters', 
+#                            values=['price', 'growth', 'population_density',
+#                                   'PC_neighborhood_1', 'PC_neighborhood_2',
+#                                   'PC_demographics_1', 'PC_demographics_2',
+#                                   'normalized_difference'],
+#                            aggfunc='median'), 2))
+# print('-'*50)
+# print('Mean condo price and growth per cluster:\n')
+# print(round(new_data.pivot_table(index='clusters', 
+#                                  values=['price', 'growth', 'population_density',
+#                                         'PC_neighborhood_1', 'PC_neighborhood_2',
+#                                         'PC_demographics_1', 'PC_demographics_2',
+#                                         'normalized_difference'],
+#                                  aggfunc='mean'), 2))
 
 
 # Need positive values for 'size' parameter of plotly scatter_mapbox
@@ -354,21 +352,24 @@ new_data.clusters = new_data.clusters.apply(lambda x: cluster_transform[x])
 # Mapbox public access token
 px.set_mapbox_access_token('pk.eyJ1IjoiamFobmljIiwiYSI6ImNrZ3dtbWRxNTBia3MzMW4wN2VudXZtcTUifQ.BVPxkX1DH75NahJvzt-f2Q')
 # Additional columns for plotting
-df = pd.concat([new_data, data[['lat', 'long']]], axis=1)
+df = pd.concat([new_data, data[['lat', 'long', 'percent_population_variation',
+                                'population_density', 'unemployment_rate']]], axis=1)
 # Rename normalized to percent difference 
 mapper = {'normalized_difference': 'Percent difference',
           'index': 'Index',
           'price': 'Price',
-          'growth': 'Neighborhood growth',
+          'percent_population_variation': 'Neighborhood growth (%)',
           'clusters': 'Cluster',
           'positive_differences': 'Exponential difference',
           'population_density': 'Population density',
-          'unemployment': 'Unemployment'}
+          'unemployment_rate': 'Unemployment rate',
+          'condo_age': 'Condo age'}
 df.rename(columns=mapper, inplace=True)
 # Plot
 fig = px.scatter_mapbox(df, lat="lat", lon="long", color="Cluster",
                         color_continuous_scale=px.colors.sequential.Rainbow, 
-                        hover_data=['Index', 'Price', 'Neighborhood growth', 'Percent difference'], 
+                        hover_data=['Index', 'Price', 'Condo age',
+                                    'Percent difference', 'Neighborhood growth (%)'], 
                         size='Exponential difference',
                         size_max=7, zoom=10, title='K-Means neighbourhood clusters')
 fig.show()
@@ -378,5 +379,5 @@ fig.show()
 # pd.read_csv('web-app/data/cluster_data.csv')
 df.to_csv('data/cluster_data.csv')
 # Test
-data = pd.read_csv('data/cluster_data.csv')
-data['Percent difference'].std()
+test_data = pd.read_csv('data/cluster_data.csv')
+test_data['Percent difference'].std()
