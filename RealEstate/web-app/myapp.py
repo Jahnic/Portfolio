@@ -17,8 +17,8 @@ st.write("""
          """)
 
 # Banner
-img = Image.open('banner.jpg')
-st.image(img)
+img_1 = Image.open('banner.jpg')
+st.image(img_1)
 # # Outlier
 # outlier_index = 2736
 # Load data
@@ -254,21 +254,6 @@ def user_input_features():
     input_result = input_result[column_order]
     return input_result
 
-# def standardize_input(data_in):
-#     """Standardizes values inside a DataFrame (data_in)"""
-#     # data_in_array = data_in.to_numpy().reshape(-1, 1)
-#     feat_means = pd.read_csv('data/parameter_means.csv', index_col=[0])
-#     feat_stds = pd.read_csv('data/parameter_stds.csv', index_col=[0])
-#     boolean_columns = ['river_proximity', 'has_pool',
-#                     'has_garage', 'is_devided']
-#     for col in data_in.columns:
-#         if col not in boolean_columns:
-#             minus_mean = data_in[col] - feat_means.loc[col,][0]
-#             standardized = minus_mean / feat_stds.loc[col,][0]
-#             data_in[col] = standardized
-        
-#     return data_in.to_numpy().reshape(-1, 1)   
-
 # Predict price based on input
 prediction_params = user_input_features() 
 prediction = boost_model.predict(prediction_params)
@@ -281,7 +266,7 @@ st.header('Condo valuation')
 st.write("""
         Adjust input values at the sidebar to predict prices for specific listings.
         The required parameters can all be found on [centris.ca](https://www.centris.ca/en/properties~for-sale~montreal-island?view=Thumbnail) and other Montreal
-        real estate websites. Predictions work best for condos below $5 Million.  
+        real estate websites. Predictions work best for condos below $1.2 Million.  
         
         Intended usage: look up condos of interest and adjust the required parameters at the side bar. 
         If the predicted price is substantially higher than the actual (~15%) this means that 
@@ -329,21 +314,6 @@ additional_attributes = mean_pivot[['Neighborhood growth (%)',
 st.table(
     additional_attributes
 )
-# # Further insights on clusters    
-# additional_insights = pd.concat([cluster_data['clusters'].astype('str'), 
-#                                  data[['price', 'prediction_difference', 'walk_score', 
-#                                  'total_area','mr_distance']]], axis=1)
-
-# pivot_table = round(pd.pivot_table(additional_insights, 
-#                index=['clusters'], 
-#                values=['prediction_difference', 'walk_score', 'mr_distance']))
-# pivot_table.columns = ['*Prediction diff.', 'Walk score', '*DWTN distance']
-# pivot_table
-
-# st.write("""
-#         \*DWTN distance: distance from downtown in km    
-#         \*Prediction diff.: predicted - actual condo price
-#          """)
 
 # Geomapping
 st.subheader("Neighbourhood clusters")
@@ -367,15 +337,28 @@ st.text("""
     Larger dots are overpredictions and may potentially refer to undervalued condos.
     """)
 
-# Top overpredictions
+
+st.subheader("Obtain records for condos of interest")
+# User search for condos based on index
+user_input = st.number_input(label="Type the index of condos found on the map:",
+                             value=0
+                        )
+
+if user_input in list(data.index):
+    st.table(
+        data.iloc[user_input, :]
+    )
+else:
+    st.text("ValueError: Index out of range.")
+
+# Hunt for undervalued condos
 st.header("Uncover undervalued condos")
-
-# Top 11 features
+# Top 11 features of linear model
 st.subheader('Top linear attributes that increase value')
-
 st.write("""
-    Linear attributes with large positive weights are likely to have a strong impact on condo price, regardless of 
-    other factors.
+    Linear attributes with large positive weights have a strong impact on price, regardless of 
+    other factors. The results should be taken with a grain of salt, since the data is not well
+    represented by the linear model.
          """)
 top_11 = pd.read_csv('data/top_11_features.csv', index_col='Unnamed: 0')
 st.write(
@@ -390,6 +373,19 @@ st.write(
     )
 )
 
+# Top non linear features of boost model
+st.subheader('Top non-linear attributes that influence value')
+st.write("""
+    The effect of non-linear attributes on price depends on the context supplied by the values
+    that the remaining attributes exhibit. The following
+    figure lists non-linear attributes according to how strongly they influence condo prices. The data
+    is better represented by the non-linear model, however, the circumstances under which prices increase
+    or decrease are not known.
+         """)
+img_2 = Image.open('non_linear_feat_importance.png')
+st.image(img_2, width=800)
+
+# Overpredictions
 st.subheader("Top overpredicted condos")
 filter_in = st.radio('Select filter', ['Absolute difference', 'Percent difference'])
 pred = data[['price', 'predicted', 'prediction_difference']]
@@ -415,20 +411,7 @@ for col in top_pred:
 st.dataframe(
     top_pred
     )
-    
 
-st.subheader("Obtain records for condos of interest")
-# User search for condos based on index
-user_input = st.number_input(label="Type index of condo to look up:",
-                             value=0
-                        )
-
-if user_input in list(data.index):
-    st.table(
-        data.iloc[user_input, :]
-    )
-else:
-    st.text("ValueError: Index out of range.")
     
 
 """
