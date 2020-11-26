@@ -91,7 +91,9 @@ def distance(destination, origin = (45.504557, -73.598104)):
 
 def user_input_features():
     # Final order of columns
-    column_order = ['total_area', 'river_proximity', 'has_pool', 'has_garage', 'is_devided',
+    column_order = ['year_built', 'percent_population_variation',
+       'population_density', 'unemployment_rate', 'walk_score',
+       'total_area', 'river_proximity', 'has_pool', 'has_garage', 'is_devided',
        'mr_distance', 'PC_neighborhood_1', 'PC_neighborhood_2',
        'PC_neighborhood_3', 'PC_neighborhood_4', 'PC_neighborhood_5',
        'PC_neighborhood_6', 'PC_neighborhood_7', 'PC_neighborhood_8',
@@ -120,22 +122,27 @@ def user_input_features():
     greenery = st.sidebar.slider('Greenery', 0, 10, get_median('greenery'), key=17)
     
     # Other parameters
-    # year_built = st.sidebar.slider('Year Built', get_min('year_built'), 
-    #                                get_max('year_built'), 
-    #                                get_mean('year_built'), key=18)
-    # population_variation_between_2011_2016_ = st.sidebar.slider('2011-2016 Population Variation',
-    #                                             get_min('population_variation_between_2011_2016_'), 
-    #                                             get_max('population_variation_between_2011_2016_'), 
-    #                                             get_mean('population_variation_between_2011_2016_')
-    #                                             , key=19)
-    # unemployment_rate_2016_ = st.sidebar.slider('2016 Unemployment Rate', 
-    #                                             get_min('unemployment_rate_2016_'), 
-    #                                             get_max('unemployment_rate_2016_'), 
-    #                                             get_mean('unemployment_rate_2016_')
-    #                                             , key=20)
-    # walk_score = st.sidebar.slider('Walk Score', get_min('walk_score'), 
-    #                                get_max('walk_score'), 
-    #                                get_mean('walk_score'), key=21)
+    year_built = st.sidebar.slider('Year Built', get_min('year_built'), 
+                                   get_max('year_built'), 
+                                   get_mean('year_built'), key=18)
+    percent_population_variation = st.sidebar.slider('2011-2016 Population Variation',
+                                                get_min('percent_population_variation'), 
+                                                get_max('percent_population_variation'), 
+                                                get_mean('percent_population_variation')
+                                                , key=19)
+    unemployment_rate = st.sidebar.slider('2016 Unemployment Rate', 
+                                                get_min('unemployment_rate'), 
+                                                get_max('unemployment_rate'), 
+                                                get_mean('unemployment_rate')
+                                                , key=20)
+    population_density = st.sidebar.slider('2016 Population Density', 
+                                                get_min('population_density'), 
+                                                get_max('population_density'), 
+                                                get_mean('population_density')
+                                                , key=31)
+    walk_score = st.sidebar.slider('Walk Score', get_min('walk_score'), 
+                                   get_max('walk_score'), 
+                                   get_mean('walk_score'), key=21)
     # rooms = st.sidebar.slider('Rooms', get_min('rooms'), 
     #                                get_max('rooms'), 
     #                                get_mean('rooms'), key=22)
@@ -159,7 +166,7 @@ def user_input_features():
                                    max_value=get_max('long'), value=-73.575949,
                                     format="%.6f")
     
-    # PC transform neighborhood data
+    # Neighborhood data for PCA transformation
     neighborhoods = pd.DataFrame(
         {
         'restaurants': restaurant,
@@ -180,11 +187,16 @@ def user_input_features():
         'transit_friendly': transit_friendly,
         'greenery': greenery}, index=[0]
     )
-    
+    # PCA transform 
     x = standard_scaler.transform(neighborhoods)
     transformed_neighborhood = pca.transform(x)
      
     data_in = {
+        'year_built': year_built,
+        'percent_population_variation': percent_population_variation,
+        'unemployment_rate': unemployment_rate,
+        'population_density': population_density,
+        'walk_score': walk_score,
         'total_area': total_area,
         'river_proximity': int(river_proximity),
         'has_pool': int(has_pool),
@@ -226,34 +238,36 @@ def user_input_features():
         component += 1 
     
     # Convert data in to dataframe    
-    print(data_in)
     input_result = pd.DataFrame(data_in, index=[0])
     
     # Transform skewed features
     input_result[['PC_neighborhood_1']] = np.sqrt(
-                                            4 + input_result[['PC_neighborhood_1']]
+                                4 + input_result[['PC_neighborhood_1']]
                                             )
-    input_result[['total_area', 'mr_distance']] = np.log1p(
-                                                input_result[['total_area', 'mr_distance']]
+    log_transform_features = ['total_area', 'mr_distance',
+                 'year_built', 'walk_score', 'population_density',
+                 'percent_population_variation']
+    input_result[log_transform_features] = np.log1p(
+                                input_result[log_transform_features]
                                                 )
     # Correct order of results
     input_result = input_result[column_order]
     return input_result
 
-def standardize_input(data_in):
-    """Standardizes values inside a DataFrame (data_in)"""
-    # data_in_array = data_in.to_numpy().reshape(-1, 1)
-    feat_means = pd.read_csv('data/parameter_means.csv', index_col=[0])
-    feat_stds = pd.read_csv('data/parameter_stds.csv', index_col=[0])
-    boolean_columns = ['river_proximity', 'has_pool',
-                    'has_garage', 'is_devided']
-    for col in data_in.columns:
-        if col not in boolean_columns:
-            minus_mean = data_in[col] - feat_means.loc[col,][0]
-            standardized = minus_mean / feat_stds.loc[col,][0]
-            data_in[col] = standardized
+# def standardize_input(data_in):
+#     """Standardizes values inside a DataFrame (data_in)"""
+#     # data_in_array = data_in.to_numpy().reshape(-1, 1)
+#     feat_means = pd.read_csv('data/parameter_means.csv', index_col=[0])
+#     feat_stds = pd.read_csv('data/parameter_stds.csv', index_col=[0])
+#     boolean_columns = ['river_proximity', 'has_pool',
+#                     'has_garage', 'is_devided']
+#     for col in data_in.columns:
+#         if col not in boolean_columns:
+#             minus_mean = data_in[col] - feat_means.loc[col,][0]
+#             standardized = minus_mean / feat_stds.loc[col,][0]
+#             data_in[col] = standardized
         
-    return data_in.to_numpy().reshape(-1, 1)   
+#     return data_in.to_numpy().reshape(-1, 1)   
 
 # Predict price based on input
 prediction_params = user_input_features() 
@@ -263,14 +277,14 @@ prediction = np.expm1(prediction)
 prediction_CAD = pd.DataFrame({'Prediction (CAD)': prediction}, index=[0])
 
 # Price prediction
-st.subheader('Condo valuation')
+st.header('Condo valuation')
 st.write("""
         Adjust input values at the sidebar to predict prices for specific listings.
         The required parameters can all be found on [centris.ca](https://www.centris.ca/en/properties~for-sale~montreal-island?view=Thumbnail) and other Montreal
         real estate websites. Predictions work best for condos below $5 Million.  
         
         Intended usage: look up condos of interest and adjust the required parameters at the side bar. 
-        If the predicted price is substantially higher than the actual (~$50,000) this means that 
+        If the predicted price is substantially higher than the actual (~15%) this means that 
         condos with similar attributes tend to be more expensive. This could imply that the condo is undervalued 
         and might be worth looking at in more detail.
         """)
@@ -302,21 +316,19 @@ st.subheader("""
 mean_pivot = round(cluster_data.pivot_table(index='Cluster', 
                             values=['PC_neighborhood_1', 'PC_neighborhood_2',
                                 'PC_demographics_1', 'PC_demographics_2',
-                                'Neighborhood growth', 'Population density', 
-                                'Price', 'Percent difference', 'condo_age'],
+                                'Neighborhood growth (%)', 'Population density',
+                                'Unemployment rate',
+                                'Price', 'Percent difference', 'Condo age'],
                             aggfunc='mean'))
-# Rename columns
-new_columns = ['Neighborhood growth', 'PC_demographics_1', 'PC_demographics_2',
-       'PC_neighborhood_1', 'PC_neighborhood_2', 'Percent difference',
-       'Population density', 'Price', 'Condo Age']
-mean_pivot.columns = new_columns
-additional_attributes = mean_pivot[['Neighborhood growth', 
-                                    'Population density',
-                                    'Price',
-                                    'Percent difference',
-                                    'Condo Age']]
-additional_attributes
 
+additional_attributes = mean_pivot[['Neighborhood growth (%)', 
+                                    'Population density',
+                                    'Condo age',
+                                    'Price'
+                                    ]]
+st.table(
+    additional_attributes
+)
 # # Further insights on clusters    
 # additional_insights = pd.concat([cluster_data['clusters'].astype('str'), 
 #                                  data[['price', 'prediction_difference', 'walk_score', 
@@ -340,7 +352,12 @@ st.write(
     px.scatter_mapbox(
         cluster_data, lat="lat", lon="long", color="Cluster",
         color_continuous_scale=px.colors.sequential.Rainbow, 
-        hover_data=['Index', 'Price', 'Neighborhood growth', 'Percent difference'], 
+        hover_data=['Index', 'Neighborhood growth (%)', 
+                                    'Population density',
+                                    'Unemployment rate',
+                                    'Condo age',
+                                    'Price',
+                                    'Percent difference'], 
         size='Exponential difference',  
         size_max=7, zoom=10, height=700, width=950)
 )
@@ -351,25 +368,49 @@ st.text("""
     """)
 
 # Top overpredictions
-st.subheader("Uncover undervalued condos")
+st.header("Uncover undervalued condos")
+
+# Top 11 features
+st.subheader('Top linear attributes that increase value')
+
+st.write("""
+    Linear attributes with large positive weights are likely to have a strong impact on condo price, regardless of 
+    other factors.
+         """)
+top_11 = pd.read_csv('data/top_11_features.csv', index_col='Unnamed: 0')
+st.write(
+    px.bar(top_11, 
+    x=top_11.weight,
+    y=top_11.feature,
+    orientation='h',
+    labels=dict(weight='Attribute importance (%)', feature="Attributes"),
+    height=600,
+    width=800,
+    hover_data=['std']
+    )
+)
+
+st.subheader("Top overpredicted condos")
 filter_in = st.radio('Select filter', ['Absolute difference', 'Percent difference'])
 pred = data[['price', 'predicted', 'prediction_difference']]
 pred = pred.astype('int')
-pred['percent_difference'] = round(pred.prediction_difference / pred.price, 2)
+pred['Percent difference'] = cluster_data['Percent difference'].astype('int')
+pred['Neighborhood growth'] = cluster_data['Neighborhood growth (%)']
 pred['cluster'] = cluster_data.Cluster
+
 # More readable columns names
 new_cols = ['Price (CAD)', 'Predicted', 'Absolute difference', 
-            'Percent difference', 'Neighborhood cluster']
+            'Percent difference', 'Neighborhood growth', 'Neighborhood cluster']
 pred.columns = new_cols
 if filter_in == 'Absolute difference':
-    top_pred = pred.sort_values(by='Absolute difference', ascending=False).iloc[: 500, :]
+    top_pred = pred.sort_values(by='Absolute difference', ascending=False).iloc[: 200, :]
 elif filter_in == 'Percent difference':
-    top_pred = pred.sort_values(by='Percent difference', ascending=False).iloc[: 500, :]
+    top_pred = pred.sort_values(by='Percent difference', ascending=False).iloc[: 200, :]
 # Display top predictions
 for col in top_pred:
-    if col not in ['Percent difference', 'Neighborhood cluster']:
+    if col in ['Price (CAD)', 'Predicted', 'Absolute difference']:
         top_pred[col] = top_pred[col].apply(lambda x: f'${x:,}')
-    elif col == 'Percent_difference':
+    elif col in ['Percent_difference', 'Neighborhood growth']:
         top_pred[col] = top_pred[col].apply(lambda x: f'{x:,}%')
 st.dataframe(
     top_pred
@@ -383,25 +424,12 @@ user_input = st.number_input(label="Type index of condo to look up:",
                         )
 
 if user_input in list(data.index):
-    data.iloc[user_input, :]
+    st.table(
+        data.iloc[user_input, :]
+    )
 else:
     st.text("ValueError: Index out of range.")
     
-
-# Top 11 features
-st.subheader('Top attributes that increase condo prices')
-top_11 = pd.read_csv('data/top_11_features.csv', index_col='Unnamed: 0')
-st.write(
-    px.bar(top_11, 
-    x=top_11.weight,
-    y=top_11.feature,
-    orientation='h',
-    labels=dict(weight='Attribute importance (%)', feature="Attributes"),
-    height=600,
-    width=800,
-    hover_data=['std']
-    )
-)
 
 """
 
