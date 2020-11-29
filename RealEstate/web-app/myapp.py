@@ -266,7 +266,7 @@ st.header('Condo valuation')
 st.write("""
         Adjust input values at the sidebar to predict prices for specific listings.
         The required parameters can all be found on [centris.ca](https://www.centris.ca/en/properties~for-sale~montreal-island?view=Thumbnail) and other Montreal
-        real estate websites. Predictions work best for condos below $1.2 Million.  
+        real estate websites. Predictions work best for condos valued below $1.2 Million which corresponds to about 95% of all condos.  
         
         Intended usage: look up condos of interest and adjust the required parameters at the side bar. 
         If the predicted price is substantially higher than the actual (~15%) this means that 
@@ -374,7 +374,7 @@ st.write(
 )
 
 # Top non linear features of boost model
-st.subheader('Top non-linear attributes that influence value')
+st.subheader('Non-linear attributes that influence value')
 st.write("""
     The effect of non-linear attributes on price depends on the context supplied by the values
     that the remaining attributes exhibit. The following
@@ -386,7 +386,7 @@ img_2 = Image.open('non_linear_feat_importance.png')
 st.image(img_2, width=800)
 
 # Overpredictions
-st.subheader("Top overpredicted condos")
+st.subheader("Top overpredicted prices")
 filter_in = st.radio('Select filter', ['Absolute difference', 'Percent difference'])
 pred = data[['price', 'predicted', 'prediction_difference']]
 pred = pred.astype('int')
@@ -412,7 +412,6 @@ st.dataframe(
     top_pred
     )
 
-    
 
 """
 
