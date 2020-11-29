@@ -10,7 +10,6 @@ import xgboost as xgb
 # Load models
 import pickle
 
-
 st.write("""
          # Montreal Real Estate Application
         **Explore Montreal neighborhoods and identify undervalued condos**
@@ -187,6 +186,7 @@ def user_input_features():
         'transit_friendly': transit_friendly,
         'greenery': greenery}, index=[0]
     )
+    
     # PCA transform 
     x = standard_scaler.transform(neighborhoods)
     transformed_neighborhood = pca.transform(x)
@@ -406,7 +406,7 @@ elif filter_in == 'Percent difference':
 for col in top_pred:
     if col in ['Price (CAD)', 'Predicted', 'Absolute difference']:
         top_pred[col] = top_pred[col].apply(lambda x: f'${x:,}')
-    elif col in ['Percent_difference', 'Neighborhood growth']:
+    elif col in ['Percent difference', 'Neighborhood growth']:
         top_pred[col] = top_pred[col].apply(lambda x: f'{x:,}%')
 st.dataframe(
     top_pred
