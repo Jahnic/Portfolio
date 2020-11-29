@@ -40,8 +40,8 @@ drop_cols = ['less_than_$50,000_(%)', 'between_$50,000_and_$80,000_(%)',
                 'non-immigrant_population_(%)', 'immigrant_population_(%)',
                 'french_(%)', 'english_(%)', 'others_languages_(%)',
                 'new_area_from_price', 'new_area_from_rooms', 'basement_bedroom',
-                'n_parking', 'population_2016_',
-                'rooms','lat', 'long', 'restaurants', 'shopping', 'vibrant', 'cycling_friendly',
+                'n_parking', 'population_2016_', 'rooms', 'lat', 'long', 
+                'restaurants', 'shopping', 'vibrant', 'cycling_friendly',
                 'car_friendly', 'historic', 'quiet', 'elementary_schools',
                 'high_schools', 'parks', 'nightlife', 'groceries', 'daycares',
                 'pedestrian_friendly', 'cafes', 'transit_friendly', 'greenery']
@@ -54,7 +54,8 @@ valid_column_names = [col.replace('_(%)', '').replace('$', 'CAD').
                       replace('(', '').replace(')', '') for col in data.columns]
 data.columns = valid_column_names
 # Remove price outliers
-data = data[data.price <= 5000000]
+data = data[data.price <= 5000000].reset_index(drop=True)
+
 # Random index shuffling for train/test split
 df = data.copy().sample(frac=1, random_state=0)
 # Prepare train and test data
@@ -79,7 +80,7 @@ numeric_feats = data.dtypes[(data.dtypes != "bool") &
 skewed_feats = data[numeric_feats].apply(lambda x: skew(x.dropna())) #compute skewness
 # positive skew
 positive_skewed_feats = skewed_feats[skewed_feats > 0.75]
-log_transform = ['price', 'total_area', 'mr_distance',
+log_transform = ['price', 'total_area', 'mr_distance', 'unemployment_rate_2016_',
                  'year_built', 'walk_score', 'population_density_',
                  'population_variation_between_2011_2016_']
 
@@ -98,17 +99,37 @@ room_dummies = pd.get_dummies(data[cat_data].astype('str'))
 fixed_skew_data.drop(cat_data, axis=1, inplace=True)
 fixed_skew_data = pd.concat([fixed_skew_data, room_dummies], axis=1)
 
-# Sklearn metrices
-X_train = fixed_skew_data.loc[train_indices, 'price':]
-X_test = fixed_skew_data.loc[test_indices, 'price':]
-y_train = X_train.pop('price')
-y_test = X_test.pop('price')
+# Rename some of the features
+mapper = {
+    'population_variation_between_2011_2016_': 'percent_population_variation',
+    'population_density_' : 'population_density',
+    'unemployment_rate_2016_': 'unemployment_rate'
+}
+fixed_skew_data.rename(mapper, axis=1, inplace=True)
+
 
 # -------------------------> Ridge and Lasso <------------------------ #
 
 # Import models
 from sklearn.linear_model import Ridge, RidgeCV, ElasticNet, LassoCV, LassoLarsCV
 from sklearn.model_selection import cross_val_score
+
+data_left = fixed_skew_data[['price', 'total_area', 'river_proximity',
+                'has_pool', 'has_garage', 'is_devided', 'mr_distance', 'bedrooms_0.0',
+                'bedrooms_1.0', 'bedrooms_2.0', 'bedrooms_3.0', 'bedrooms_4.0',
+                'bedrooms_5.0', 'bedrooms_6.0', 'bathrooms_0.0', 'bathrooms_1.0',
+                'bathrooms_2.0', 'bathrooms_3.0', 'bathrooms_4.0', 'powder_rooms_0.0',
+                'powder_rooms_1.0', 'powder_rooms_2.0']]
+data_right = np.log1p(complete_data[['restaurants', 'shopping', 'vibrant', 'cycling_friendly',
+                'car_friendly', 'historic', 'quiet', 'elementary_schools',
+                'high_schools', 'parks', 'nightlife', 'groceries', 'daycares',
+                'pedestrian_friendly', 'cafes', 'transit_friendly', 'greenery']])
+data_linear = pd.concat([data_left, data_right], axis=1)
+# Linear train/test data
+X_train = data_linear.loc[train_indices, 'price':].copy()
+X_test = data_linear.loc[test_indices, 'price':].copy()
+y_train = X_train.pop('price')
+y_test = X_test.pop('price')
 
 def rmse_cv(model):
     rmse = np.sqrt(-cross_val_score(model, 
@@ -155,13 +176,19 @@ preds = pd.DataFrame({"preds":np.expm1(model_lasso.predict(X_test)),
                       "actual":np.expm1(y_test)})
 preds["residuals"] = preds["actual"] - preds["preds"]
 preds.plot(x = "preds", y = "residuals",kind = "scatter")
-preds.residuals.std()
+preds[np.expm1(y_test) <= 1200000].residuals.std()
 
 
 # -----------------------> xgBOOST <----------------------- #
 
 import xgboost as xgb
 from sklearn.model_selection import GridSearchCV
+
+# Test/train data
+X_train = fixed_skew_data.loc[train_indices, 'price':].copy()
+X_test = fixed_skew_data.loc[test_indices, 'price':].copy()
+y_train = X_train.pop('price')
+y_test = X_test.pop('price')
 
 # Hyperparameter optimization
 params = {'max_depth': [2, 3, 4], \
@@ -198,9 +225,9 @@ print("Boost test error:", boost_error)
 # lasso_error = (np.expm1(y_test) - lasso_preds).std()
 xgb.plot_importance(model_xgb)
 
-# Save and load boosted model
-model_name = 'web-app/boost_model.dat'
-pickle.dump(model_xgb, open(model_name, 'wb'))
+# # Save and load boosted model
+# model_name = 'web-app/boost_model.dat'
+# pickle.dump(model_xgb, open(model_name, 'wb'))
 loaded_model = pickle.load(open(model_name, 'rb'))
 
 # # Tree plot
@@ -208,6 +235,9 @@ loaded_model = pickle.load(open(model_name, 'rb'))
 
 # -----------------------> predictions on entire data set <------------#
 
+# Rename columns in complete_data
+complete_data.rename(mapper, axis=1, inplace=True)
+data.rename(mapper, axis=1, inplace=True)
 # Categorical room data
 prediction_data = data.iloc[:, 1 :].copy()
 room_dummies = pd.get_dummies(prediction_data[cat_data].astype('str'))
@@ -215,6 +245,9 @@ prediction_data.drop(cat_data, axis=1, inplace=True)
 prediction_data = pd.concat([prediction_data, room_dummies], axis=1)
 
 # Transform skewed data
+log_transform = ['price', 'total_area', 'mr_distance', 'unemployment_rate',
+                 'year_built', 'walk_score', 'population_density',
+                 'percent_population_variation']
 prediction_data['PC_neighborhood_1'] = np.sqrt(4 + prediction_data[['PC_neighborhood_1']])
 prediction_data[log_transform] = np.log1p(prediction_data[log_transform])
 boolean_feats = ['river_proximity', 'has_pool', 'has_garage', 'is_devided']
@@ -251,15 +284,16 @@ from keras.regularizers import l1
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
-X_train = StandardScaler().fit_transform(X_train)
-
+# Training data
+X_train_keras = StandardScaler().fit_transform(X_train)
+X_train_keras = X_train.astype('float32')
 # Train/validation split 
-X_tr, X_val, y_tr, y_val = train_test_split(X_train, y_train, random_state = 0)
+X_tr, X_val, y_tr, y_val = train_test_split(X_train_keras, y_train, random_state = 0)
 X_tr.shape
 
 model = Sequential()
-# model.add(Dense(256, activation="relu", input_dim = X_train.shape[1]))
-model.add(Dense(1, input_dim = X_train.shape[1], activity_regularizer=l1(0.0005)))
+# model.add(Dense(256, activation="relu", input_dim = X_train_keras.shape[1]))
+model.add(Dense(1, input_dim = X_train_keras.shape[1], activity_regularizer=l1(0.0005)))
 model.compile(loss = "mse", optimizer = "adam")
 
 hist = model.fit(X_tr, y_tr, validation_data = (X_val, y_val), epochs=20)
