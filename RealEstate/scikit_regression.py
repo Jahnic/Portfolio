@@ -40,7 +40,7 @@ drop_cols = ['less_than_$50,000_(%)', 'between_$50,000_and_$80,000_(%)',
                 'non-immigrant_population_(%)', 'immigrant_population_(%)',
                 'french_(%)', 'english_(%)', 'others_languages_(%)',
                 'new_area_from_price', 'new_area_from_rooms', 'basement_bedroom',
-                'n_parking', 'population_2016_', 'rooms', 'lat', 'long', 
+                'n_parking', 'population_2016_', 'rooms', 
                 'restaurants', 'shopping', 'vibrant', 'cycling_friendly',
                 'car_friendly', 'historic', 'quiet', 'elementary_schools',
                 'high_schools', 'parks', 'nightlife', 'groceries', 'daycares',
@@ -191,10 +191,11 @@ y_train = X_train.pop('price')
 y_test = X_test.pop('price')
 
 # Hyperparameter optimization
-params = {'max_depth': [2, 3, 4], \
+params = {'max_depth': [2, 3, 4, 5], \
           "eta": [0.005, 0.001, 0.01, 0.02], \
           "reg_alpha": [ 0.01, 0.025, 0.05, 0.1],
-          "n_estimators": [1000]} #the params are tuned using xgb.cv
+          "n_estimators": [1000],
+          "num_parallel_tree": [2, 3]} #the params are tuned using xgb.cv
                          
 model_xgb = xgb.XGBRegressor()
 
@@ -208,7 +209,8 @@ clf.best_params_
 model_xgb = xgb.XGBRegressor(n_estimators=1000, 
                              max_depth=4,
                              eta=0.02,
-                             reg_alpha=0.01) #the params were tuned using GridSearchCV
+                             num_parallel_tree=2,
+                             reg_alpha=0.001) #the params were tuned using GridSearchCV
 model_xgb.fit(X_train, y_train)
 
 # Boost and lasso
