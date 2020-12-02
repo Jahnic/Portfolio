@@ -386,8 +386,12 @@ img_2 = Image.open('non_linear_feat_importance.png')
 st.image(img_2, width=800)
 
 # Overpredictions
-st.subheader("Top overpredicted prices")
-filter_in = st.radio('Select filter', ['Absolute difference', 'Percent difference'])
+st.subheader("Overpredicted condo values")
+st.write("Apply filters")
+difference_filter_in = st.radio('Select type of difference', ['Absolute difference', 'Percent difference'])
+price_filter_in = st.number_input('Enter maximum condo price', min_value=get_min('price'), 
+                                   max_value=get_max('price'), 
+                                   value=1000000)
 pred = data[['price', 'predicted', 'prediction_difference']]
 pred = pred.astype('int')
 pred['Percent difference'] = cluster_data['Percent difference'].astype('int')
@@ -398,17 +402,22 @@ pred['cluster'] = cluster_data.Cluster
 new_cols = ['Price (CAD)', 'Predicted', 'Absolute difference', 
             'Percent difference', 'Neighborhood growth', 'Neighborhood cluster']
 pred.columns = new_cols
-if filter_in == 'Absolute difference':
+# Filter prices according to input
+pred = pred[pred['Price (CAD)'] <= price_filter_in]
+# Apply filter based on input
+if difference_filter_in == 'Absolute difference':
     top_pred = pred.sort_values(by='Absolute difference', ascending=False).iloc[: 200, :]
-elif filter_in == 'Percent difference':
+elif difference_filter_in == 'Percent difference':
     top_pred = pred.sort_values(by='Percent difference', ascending=False).iloc[: 200, :]
-# Display top predictions
+
+# Convert columns to string and format
 for col in top_pred:
     if col in ['Price (CAD)', 'Predicted', 'Absolute difference']:
         top_pred[col] = top_pred[col].apply(lambda x: f'${x:,}')
     elif col in ['Percent difference', 'Neighborhood growth']:
         top_pred[col] = top_pred[col].apply(lambda x: f'{x:,}%')
 st.dataframe(
+    # Filter prices according to input
     top_pred
     )
 
