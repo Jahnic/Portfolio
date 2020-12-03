@@ -42,10 +42,19 @@ x = pickle.load(open('web-app/scaler.dat', 'rb')).transform(neighbourhoods)
 # PCA
 pca = PCA(n_components=8)
 pca_model = pca.fit(x) # save
-pickle.dump(pca_model,open('web-app/pca.pkl', 'wb'))
+# Print PC1 and PC2 weights as tables
+for i in range(2):
+       component = pca_model.components_[i]
+       results = pd.DataFrame(
+              data=component,
+              index=neighbourhood_data,
+              columns=[i]
+       )
+       print(results.sort_values(by=i)) # sort by weight
+       
+# pickle.dump(pca_model,open('web-app/pca.pkl', 'wb')) # save model
 # Transform data
 X_neighborhood = pickle.load(open('web-app/pca.pkl', 'rb')).transform(x)
-X_neighborhood
 # # t-SNE
 # tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
 # tsne_results = tsne.fit_transform(x)
@@ -209,8 +218,20 @@ x = StandardScaler().fit_transform(demographics)
 # Initial PCA
 pca = PCA()
 pca.fit(x)
+
+# Print PC1 and PC2 weights as tables
+for i in range(2):
+       component = pca.components_[i]
+       results = pd.DataFrame(
+              data=component,
+              index=demographic_data,
+              columns=[i]
+       )
+       print(results.sort_values(by=i)) # sort by weight
+       
+# Plot commutative explained variance over number of PCs
 explained_variance = pca.explained_variance_
-pca.components_
+print('PCA components:', pca.components_)
 plt.plot(range(1, 16), explained_variance/sum(explained_variance))
 
 # PCA
@@ -318,25 +339,26 @@ for i,c in enumerate(cluster_features):
 new_data['clusters'] = labels
 new_data['index'] = new_data.index
 
-# # -----> Skip clustering and load saved cluster_data table
-# new_data = pd.read_csv('data/cluster_data.csv')
+# -----> Skip clustering and load saved cluster_data table
+new_data = pd.read_csv('data/cluster_data.csv')
 
 # Pivot tables
-# print('Median condo price and growth per cluster:\n')
-# print(round(new_data.pivot_table(index='clusters', 
-#                            values=['price', 'growth', 'population_density',
-#                                   'PC_neighborhood_1', 'PC_neighborhood_2',
-#                                   'PC_demographics_1', 'PC_demographics_2',
-#                                   'normalized_difference'],
-#                            aggfunc='median'), 2))
-# print('-'*50)
-# print('Mean condo price and growth per cluster:\n')
-# print(round(new_data.pivot_table(index='clusters', 
-#                                  values=['price', 'growth', 'population_density',
-#                                         'PC_neighborhood_1', 'PC_neighborhood_2',
-#                                         'PC_demographics_1', 'PC_demographics_2',
-#                                         'normalized_difference'],
-#                                  aggfunc='mean'), 2))
+print('Median condo price and growth per cluster:\n')
+print(round(new_data.pivot_table(index='Cluster', 
+                           values=['Price', 'Neighborhood growth (%)', 'Population density',
+                                  'PC_neighborhood_1', 'PC_neighborhood_2',
+                                  'PC_demographics_1', 'PC_demographics_2',
+                                  'Percent difference'],
+                           aggfunc='median'), 2))
+print('-'*50)
+print('Mean condo price and growth per cluster:\n')
+print(round(new_data.pivot_table(index='Cluster', 
+                                 values=['Price', 'Neighborhood growth (%)', 'Population density',
+                                        'PC_neighborhood_1', 'PC_neighborhood_2',
+                                        'PC_demographics_1', 'PC_demographics_2',
+                                        'Percent difference'],
+                                 aggfunc='mean'), 2))
+
 
 
 # Need positive values for 'size' parameter of plotly scatter_mapbox
@@ -345,8 +367,8 @@ new_data['positive_differences'] = ((new_data['normalized_difference'] - # -- = 
                                    new_data['normalized_difference'].min()))**2
 # Change cluster number for better color seperation on map
 # Avoid light blue next to dark blue...
-cluster_transform = {3:0, 1:1, 4:2, 6:3, 2:4, 5:5, 0:6, 7:7}
-new_data.clusters = new_data.clusters.apply(lambda x: cluster_transform[x])
+cluster_mapping = {3:0, 1:1, 4:2, 6:3, 2:4, 5:5, 0:6, 7:7}
+new_data.clusters = new_data.clusters.apply(lambda x: cluster_mapping[x])
 
 
 # Mapbox public access token
@@ -374,6 +396,14 @@ fig = px.scatter_mapbox(df, lat="lat", lon="long", color="Cluster",
                         size_max=7, zoom=10, title='K-Means neighbourhood clusters')
 fig.show()
 
+mean_pivot = round(df.pivot_table(index='Cluster', 
+                            values=['PC_neighborhood_1', 'PC_neighborhood_2',
+                                'PC_demographics_1', 'PC_demographics_2',
+                                'Neighborhood growth (%)', 'Population density',
+                                'Unemployment rate',
+                                'Price', 'Percent difference', 'Condo age'],
+                            aggfunc='mean'))
+mean_pivot
 # Save cluster data
 # df.to_csv('web-app/data/cluster_data.csv', index=False)
 # pd.read_csv('web-app/data/cluster_data.csv')
