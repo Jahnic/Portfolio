@@ -388,7 +388,7 @@ st.image(img_2, width=800)
 # Overpredictions
 st.subheader("Overpredicted condo values")
 st.write("Apply filters")
-difference_filter_in = st.radio('Select type of difference', ['Absolute difference', 'Percent difference'])
+difference_filter_in = st.radio('Select type of difference ', ['Absolute difference', 'Percent difference'])
 price_filter_in = st.number_input('Enter maximum condo price', min_value=get_min('price'), 
                                    max_value=get_max('price'), 
                                    value=1000000)
@@ -437,8 +437,9 @@ pc_explanations = pd.DataFrame({
     "Sign of value": ['Positive', 'Negative', 'Positive', 'Negative',
                    'Positive', 'Negative','Positive', 'Negative'],
     "Interpretation": ["Uneventful suburbs", "Vibrant city-life",
-                       "City-life", "Family friendly", "Middle-class families",
-                       "Students", "Educated and Affluent", "Poor"]
+                       "Moderately vibrant", "Family friendly", 
+                       "Middle-class families", "Student-like lifestyle", 
+                       "Educated and Affluent", "Lower-income and education"]
 })
 
 pc_explanations.set_index(['Type', 'Component', 'Sign of value'], inplace=True)
