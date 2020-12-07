@@ -266,9 +266,9 @@ st.header('Condo valuation')
 st.write("""
         Adjust input values at the sidebar to predict prices for specific listings.
         The required parameters can all be found on [centris.ca](https://www.centris.ca/en/properties~for-sale~montreal-island?view=Thumbnail) and other Montreal
-        real estate websites. Predictions work best for condos valued below $1.2 Million which corresponds to about 95% of all condos.  
+        real estate websites. Predictions work best for condominiums valued below $1.2 Million which corresponds to about 95% of all listings.  
         
-        Intended usage: look up condos of interest and adjust the required parameters at the side bar. 
+        Intended usage: look up condos of interest and adjust the required parameters at the side bar accordingly. 
         If the predicted price is substantially higher than the actual (~15%) this means that 
         condos with similar attributes tend to be more expensive. This could imply that the condo is undervalued 
         and might be worth looking at in more detail.
@@ -279,9 +279,14 @@ st.write('---')
     
 # Cluster interpretation
 st.write("""
-    ## K-Means neighborhood clustering
+    ## Neighborhood clustering
     Neighborhoods have been aggregated into 8 clusters according to rated
-    attributes such as proximity to parks or groceries and neighborhood demographics.
+    attributes such as proximity to parks or groceries, as well as neighborhood demographics.  
+    
+    The following are brief descriptions for each cluster identity. For the more technical users, 
+    a breakdown of clusters and their corresponding average principle components can be 
+    found below this table.
+    
     ### Cluster interpretation
     **Cluster 0:** Vibrant city life with student-like renters.  
     **Cluster 1:** Middle class, family friendly neighborhood.  
@@ -291,13 +296,47 @@ st.write("""
     **Cluster 5:** Moderately vibrant, with middle and lower income families.   
     **Cluster 6:** Mix of vibrant and family friendly neighborhood with both low and high income earners.  
     **Cluster 7:** Suburb-like with middle and lower income earners.
-        """)  
+        """) 
+
+"""
+**Technical information**
+"""
+
+# PC Interpretation
+pc_explanations = pd.DataFrame({
+    "Type": ['Neighborhood', 'Neighborhood', 'Neighborhood', 'Neighborhood',
+             'Demographics', 'Demographics', 'Demographics', 'Demographics'],
+    "Component": ['PC1', 'PC1', 'PC2', 'PC2', 'PC1', 'PC1', 'PC2', 'PC2'],
+    "Sign of value": ['Positive', 'Negative', 'Positive', 'Negative',
+                   'Positive', 'Negative','Positive', 'Negative'],
+    "Interpretation": ["Uneventful suburbs", "Vibrant city-life",
+                       "Moderately vibrant", "Family friendly", 
+                       "Middle-class families", "Student-like lifestyle", 
+                       "Educated and Affluent", "Lower-income and education"]
+})
+
+pc_explanations.set_index(['Type', 'Component', 'Sign of value'], inplace=True)
+
+# Breakdown of PCs
+if st.checkbox('Interpretation of principle components (PCs)'):
+    st.write(
+        """
+        The principle components indicate which neighborhood and demographic features 
+        differ the most accross varying locations in Montreal. 
+        The following table guides the interpretation of PC scores for negative and 
+        positive values. Interpretations are based on the coefficients of principle 
+        components.  
+          
+        Example: neighborhoods with a strong negative score of the neighborhood PC1 corresponds to 
+        vibrant areas typical of big-cities. Nightlife establishments, shopping oppertunities,
+        restaurant and high noise pollution would be expected. 
+        
+        """
+    )
+    
+    pc_explanations
 
 # Additional cluster Interpretation
-st.subheader("""
-        Additional attributes averaged over each cluster
-    """)  
-
 mean_pivot = round(cluster_data.pivot_table(index='Cluster', 
                             values=['PC_neighborhood_1', 'PC_neighborhood_2',
                                 'PC_demographics_1', 'PC_demographics_2',
@@ -310,13 +349,34 @@ additional_attributes = mean_pivot[['Neighborhood growth (%)',
                                     'Population density',
                                     'Condo age',
                                     'Price'
-                                    ]]
+                                    ]].copy()
+# Indicate units of columns
+additional_attributes.rename(columns={'Price': 'Price (CAD)', 
+                                      'Condo age': 'Condo age (year)',
+                                      'Population density': 'Population density (hab/km^2)'}, inplace=True)
+
+if st.checkbox('Breakdown of clusters'):
+    st.write("""
+        The following information was used to construct the cluster interpretations.  
+        
+        **Mean PC values for each of the 8 clusters**
+    """)
+    mean_pivot[['PC_neighborhood_1', 'PC_neighborhood_2',
+                'PC_demographics_1', 'PC_demographics_2']] 
+    
+st.subheader("""
+    Additional attributes averaged over each cluster
+""")  
 st.table(
     additional_attributes
 )
 
+"""
+---
+"""
+
 # Geomapping
-st.subheader("Neighbourhood clusters")
+st.subheader("Neighborhood map")
 px.set_mapbox_access_token('pk.eyJ1IjoiamFobmljIiwiYSI6ImNrZ3dtbWRxNTBia3MzMW4wN2VudXZtcTUifQ.BVPxkX1DH75NahJvzt-f2Q')
 st.write(
     px.scatter_mapbox(
@@ -352,7 +412,44 @@ else:
     st.text("ValueError: Index out of range.")
 
 # Hunt for undervalued condos
-st.header("Uncover undervalued condos")
+st.header("Uncover undervalued condominiums")
+
+# Overpredictions
+st.write("Apply filters")
+difference_filter_in = st.radio('Select type of difference ', ['Absolute difference', 'Percent difference'])
+price_filter_in = st.number_input('Enter maximum condo price', min_value=get_min('price'), 
+                                   max_value=get_max('price'), 
+                                   value=1000000)
+pred = data[['price', 'predicted', 'prediction_difference']]
+pred = pred.astype('int')
+pred['Percent difference'] = cluster_data['Percent difference'].astype('int')
+pred['Neighborhood growth'] = cluster_data['Neighborhood growth (%)']
+pred['cluster'] = cluster_data.Cluster
+
+# More readable columns names
+new_cols = ['Price (CAD)', 'Predicted', 'Absolute difference', 
+            'Percent difference', 'Neighborhood growth', 'Neighborhood cluster']
+pred.columns = new_cols
+# Filter prices according to input
+pred = pred[pred['Price (CAD)'] <= price_filter_in]
+# Apply filter based on input
+if difference_filter_in == 'Absolute difference':
+    top_pred = pred.sort_values(by='Absolute difference', ascending=False).iloc[: 200, :]
+elif difference_filter_in == 'Percent difference':
+    top_pred = pred.sort_values(by='Percent difference', ascending=False).iloc[: 200, :]
+
+# Convert columns to string and format
+for col in top_pred:
+    if col in ['Price (CAD)', 'Predicted', 'Absolute difference']:
+        top_pred[col] = top_pred[col].apply(lambda x: f'${x:,}')
+    elif col in ['Percent difference', 'Neighborhood growth']:
+        top_pred[col] = top_pred[col].apply(lambda x: f'{x:,}%')
+st.subheader("Top overpredicted condos")
+st.dataframe(
+    # Filter prices according to input
+    top_pred
+    )
+
 # Top 11 features of linear model
 st.subheader('Top linear attributes that increase value')
 st.write("""
@@ -385,88 +482,8 @@ st.write("""
 img_2 = Image.open('non_linear_feat_importance.png')
 st.image(img_2, width=800)
 
-# Overpredictions
-st.subheader("Overpredicted condo values")
-st.write("Apply filters")
-difference_filter_in = st.radio('Select type of difference ', ['Absolute difference', 'Percent difference'])
-price_filter_in = st.number_input('Enter maximum condo price', min_value=get_min('price'), 
-                                   max_value=get_max('price'), 
-                                   value=1000000)
-pred = data[['price', 'predicted', 'prediction_difference']]
-pred = pred.astype('int')
-pred['Percent difference'] = cluster_data['Percent difference'].astype('int')
-pred['Neighborhood growth'] = cluster_data['Neighborhood growth (%)']
-pred['cluster'] = cluster_data.Cluster
-
-# More readable columns names
-new_cols = ['Price (CAD)', 'Predicted', 'Absolute difference', 
-            'Percent difference', 'Neighborhood growth', 'Neighborhood cluster']
-pred.columns = new_cols
-# Filter prices according to input
-pred = pred[pred['Price (CAD)'] <= price_filter_in]
-# Apply filter based on input
-if difference_filter_in == 'Absolute difference':
-    top_pred = pred.sort_values(by='Absolute difference', ascending=False).iloc[: 200, :]
-elif difference_filter_in == 'Percent difference':
-    top_pred = pred.sort_values(by='Percent difference', ascending=False).iloc[: 200, :]
-
-# Convert columns to string and format
-for col in top_pred:
-    if col in ['Price (CAD)', 'Predicted', 'Absolute difference']:
-        top_pred[col] = top_pred[col].apply(lambda x: f'${x:,}')
-    elif col in ['Percent difference', 'Neighborhood growth']:
-        top_pred[col] = top_pred[col].apply(lambda x: f'{x:,}%')
-st.dataframe(
-    # Filter prices according to input
-    top_pred
-    )
 
 
-"""
-
----
-
-**Additional information on PCs and clusters**
-"""
-
-# PC Interpretation
-pc_explanations = pd.DataFrame({
-    "Type": ['Neighborhood', 'Neighborhood', 'Neighborhood', 'Neighborhood',
-             'Demographics', 'Demographics', 'Demographics', 'Demographics'],
-    "Component": ['PC1', 'PC1', 'PC2', 'PC2', 'PC1', 'PC1', 'PC2', 'PC2'],
-    "Sign of value": ['Positive', 'Negative', 'Positive', 'Negative',
-                   'Positive', 'Negative','Positive', 'Negative'],
-    "Interpretation": ["Uneventful suburbs", "Vibrant city-life",
-                       "Moderately vibrant", "Family friendly", 
-                       "Middle-class families", "Student-like lifestyle", 
-                       "Educated and Affluent", "Lower-income and education"]
-})
-
-pc_explanations.set_index(['Type', 'Component', 'Sign of value'], inplace=True)
 
 
-# Breakdown of PCs
-if st.checkbox('Interpretation of principle components (PCs)'):
-    st.write(
-        """
-        The following PCs indicate which neighborhood and demographic attributes 
-        differ the most accross varying locations in Montreal. 
-        The following table guides the interpretation of PC scores for negative and 
-        positive values.  
-          
-        Example: a strong negative score of the neighborhood PC1 corresponds to 
-        vibrant areas typical of big-cities. Nightlife establishments, shopping oppertunities,
-        restaurant and noise pollution would all be expected in areas with such
-        a PC score. 
-        
-        """
-    )
-    pc_explanations
-
-if st.checkbox('Breakdown of clusters'):
-    st.write("""
-        **The following table contains mean PC values for each of the 8 clusters.**
-    """)
-    mean_pivot[['PC_neighborhood_1', 'PC_neighborhood_2',
-                'PC_demographics_1', 'PC_demographics_2']]
     
