@@ -283,14 +283,14 @@ st.write("""
     Neighborhoods have been aggregated into 8 clusters according to rated
     attributes such as proximity to parks or groceries and neighborhood demographics.
     ### Cluster interpretation
-    **Cluster 0:** Vibrant city life with students and affluent professionals.  
-    **Cluster 1:** Uneventful with predominantely lower income residents.  
-    **Cluster 2:** Mostly uneventful city life, with majority middle and some lower income demographics.  
-    **Cluster 3:** Moderately vibrant with students and low income residents.  
-    **Cluster 4:** Suburb-like, upper middle class neighborhood.  
-    **Cluster 5:** Family friendly, with highly educated residents.  
+    **Cluster 0:** Vibrant city life with student-like renters.  
+    **Cluster 1:** Middle class, family friendly neighborhood.  
+    **Cluster 2:** Upper middle class home owners in suburb-like environment.  
+    **Cluster 3:** Affluent neighborhood that is vibrant and simultaneously family friendly.  
+    **Cluster 4:** Upper middle class in moderately vibrant neighborhood.  
+    **Cluster 5:** Moderately vibrant, with middle and lower income families.   
     **Cluster 6:** Mix of vibrant and family friendly neighborhood with both low and high income earners.  
-    **Cluster 7:** Very Family friendly and uneventful with mostly middle class families.
+    **Cluster 7:** Suburb-like with middle and lower income earners.
         """)  
 
 # Additional cluster Interpretation
@@ -340,7 +340,7 @@ st.text("""
 
 st.subheader("Obtain records for condos of interest")
 # User search for condos based on index
-user_input = st.number_input(label="Type the index of condos found on the map:",
+user_input = st.number_input(label="Type the index for a condo of interest:",
                              value=0
                         )
 
