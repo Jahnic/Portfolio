@@ -377,26 +377,35 @@ st.table(
 
 # Geomapping
 st.subheader("Neighborhood map")
+st.write("""
+         Colors represent clusters, and dot-sizes correspond to differences between 
+         the model prediction and the actual price of a condominium. 
+         The larger the dot, the higher the potential for profit. Hovering over data points
+         reveals rudimentary information on listings such as IDs and neighborhood growth rates.    
+         
+         To access the complete data for a condo of interest, type its ID in in the input field found
+         in the section down below.
+         """)
 px.set_mapbox_access_token('pk.eyJ1IjoiamFobmljIiwiYSI6ImNrZ3dtbWRxNTBia3MzMW4wN2VudXZtcTUifQ.BVPxkX1DH75NahJvzt-f2Q')
+# ID is easier to understand
+cluster_data.rename(columns={'Index': 'ID'}, inplace=True)
 st.write(
     px.scatter_mapbox(
         cluster_data, lat="lat", lon="long", color="Cluster",
         color_continuous_scale=px.colors.sequential.Rainbow, 
-        hover_data=['Index', 'Neighborhood growth (%)', 
-                                    'Population density',
-                                    'Unemployment rate',
-                                    'Condo age',
-                                    'Price',
-                                    'Percent difference'], 
+        hover_data={'ID': True,
+                    'Price': True,
+                    'Percent difference': True, 
+                    'Neighborhood growth (%)': True, 
+                    'Population density': True,
+                    'Unemployment rate': True,
+                    'Condo age': True,
+                    'lat': False,
+                    'long': False,
+                    'Exponential difference': False}, 
         size='Exponential difference',  
         size_max=7, zoom=10, height=700, width=950)
 )
-
-st.text("""
-    *Dot sizes corresponds to differences between predicted and actual condo price values.
-    Larger dots are overpredictions and may potentially refer to undervalued condos.
-    """)
-
 
 st.subheader("Obtain records for condos of interest")
 # User search for condos based on index
