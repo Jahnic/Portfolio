@@ -6,6 +6,9 @@ While the reasons for homeownership may vary, asset appreciation is a common den
 Data is retrieved through web scraping listings using `Selenium` on [Centris](https://www.centris.ca/en/properties~for-sale~montreal-island?view=Thumbnail).
 Due to the complexity of the data retrieval, the process takes about 9 seconds per listing. It's therefore highly recommended to focus on a single city for the scraping process. An area with 6000 listings is estimated to take approximately 15 hours.
 
+# Web-Application
+The web-application to this project can be accessed [here](https://montreal-condo-app.herokuapp.com/).
+
 # Disclaimer 
 The scraper is currently non-functional due to changes on the Centris website. A fix is in work.
 
