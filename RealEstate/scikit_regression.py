@@ -190,7 +190,7 @@ X_test = fixed_skew_data.loc[test_indices, 'price':].copy()
 y_train = X_train.pop('price')
 y_test = X_test.pop('price')
 
-# Hyperparameter optimization
+# Gridsearch hyperparameter optimization
 params = {'max_depth': [2, 3, 4, 5], \
           "eta": [0.005, 0.001, 0.01, 0.02], \
           "reg_alpha": [ 0.01, 0.025, 0.05, 0.1],
